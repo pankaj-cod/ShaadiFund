@@ -1,0 +1,19 @@
+# Local development database only. Never used in production.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vowfund
+      POSTGRES_PASSWORD: vowfund
+      POSTGRES_DB: vowfund
+    ports:
+      - "54329:5432"
+    volumes:
+      - vowfund-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vowfund -d vowfund"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  vowfund-pg:

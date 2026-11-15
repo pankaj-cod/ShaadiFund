@@ -1,0 +1,581 @@
+// VowFund database schema (Phase 1 design).
+// Conventions:
+//   - All ids are UUIDs. Nothing sequential is ever exposed.
+//   - All money is integer paise (INR smallest unit). Never floats.
+//   - Financial rows (Contribution, Payment, PaymentEvent, Refund, SettlementRecord,
+//     PaymentStatusTransition) are never deleted; relations use Restrict.
+//   - CHECK constraints (amounts > 0, funded >= 0, refunded <= amount) are added in
+//     the first SQL migration, because Prisma cannot express them here.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum UserRole {
+  COUPLE
+  ADMIN
+}
+
+enum CoupleMemberRole {
+  OWNER
+  PARTNER
+}
+
+enum WeddingStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+  SUSPENDED
+}
+
+enum ThemeKey {
+  MINIMAL_IVORY
+  ROYAL_INDIAN
+  MODERN_EDITORIAL
+}
+
+enum DreamCategory {
+  HONEYMOON
+  TRAVEL
+  EXPERIENCES
+  HOME
+  LIFESTYLE
+  ADVENTURES
+  OTHER
+}
+
+enum ContributionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  EXPIRED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  MOCK
+  RAZORPAY
+}
+
+enum PaymentMode {
+  TEST
+  LIVE
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum TransitionSource {
+  CHECKOUT_VERIFY
+  WEBHOOK
+  RECONCILIATION
+  ADMIN
+  SYSTEM
+}
+
+enum PaymentEventStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
+enum RefundStatus {
+  REQUESTED
+  PROCESSED
+  FAILED
+}
+
+enum SettlementStatus {
+  PENDING
+  SETTLED
+  FAILED
+  REVERSED
+}
+
+enum MessageVisibility {
+  PUBLIC
+  COUPLE_ONLY
+}
+
+enum ModerationStatus {
+  VISIBLE
+  HIDDEN
+}
+
+enum MediaKind {
+  HERO
+  PROFILE
+  DREAM_COVER
+}
+
+enum NotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+enum AuditActorType {
+  USER
+  ADMIN
+  SYSTEM
+  WEBHOOK
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum SupportStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+// ───────────────────────── Identity ─────────────────────────
+// Session, Account and Verification follow the auth library's expected shape
+// (see ADR 0002). Regenerate with its CLI in Phase 2 and reconcile any drift.
+
+model User {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  name          String   @default("")
+  image         String?
+  role          UserRole @default(COUPLE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions    Session[]
+  accounts    Account[]
+  membership  CoupleMember?
+  auditLogs   AuditLog[]
+  refunds     Refund[]
+}
+
+model Session {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  userId                String    @db.Uuid
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  // Present because the auth library expects the column; password sign-in is disabled.
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ───────────────────────── Couple and wedding ─────────────────────────
+
+model Couple {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  partnerOneName        String?
+  partnerTwoName        String?
+  onboardingStep        Int       @default(1)
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  members CoupleMember[]
+  wedding Wedding?
+  media   MediaAsset[]
+}
+
+model CoupleMember {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  coupleId  String           @db.Uuid
+  userId    String           @db.Uuid
+  role      CoupleMemberRole @default(OWNER)
+  createdAt DateTime         @default(now())
+
+  couple Couple @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A user belongs to exactly one couple. This also makes "create my couple" race-safe.
+  @@unique([userId])
+  @@index([coupleId])
+}
+
+model Wedding {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  coupleId        String        @unique @db.Uuid
+  slug            String        @unique
+  status          WeddingStatus @default(DRAFT)
+  theme           ThemeKey      @default(MINIMAL_IVORY)
+  weddingDate     DateTime?     @db.Date
+  venueName       String?
+  city            String?
+  country         String        @default("IN")
+  welcomeMessage  String?
+  thankYouMessage String?
+  heroImageId     String?       @unique @db.Uuid
+
+  // Privacy controls, all owned by the couple.
+  showProgress      Boolean @default(true)
+  showGuestNames    Boolean @default(true)
+  showGuestMessages Boolean @default(true)
+  showAmounts       Boolean @default(false)
+  allowIndexing     Boolean @default(false)
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  couple        Couple             @relation(fields: [coupleId], references: [id], onDelete: Restrict)
+  heroImage     MediaAsset?        @relation("WeddingHero", fields: [heroImageId], references: [id], onDelete: SetNull)
+  dreams        Dream[]
+  contributions Contribution[]
+  messages      GuestMessage[]
+  settlements   SettlementRecord[]
+  reports       ContentReport[]
+
+  @@index([status])
+}
+
+model Dream {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  weddingId         String        @db.Uuid
+  title             String
+  description       String
+  category          DreamCategory
+  customCategory    String?
+  coverImageId      String?       @unique @db.Uuid
+  targetPaise       Int
+  // Maintained only by the payment service, inside the capture/refund transaction.
+  // Reconciliation asserts these equal the aggregate of captured payments.
+  fundedPaise       Int           @default(0)
+  contributionCount Int           @default(0)
+  displayOrder      Int           @default(0)
+  isActive          Boolean       @default(true)
+  targetDate        DateTime?     @db.Date
+  deletedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  wedding       Wedding        @relation(fields: [weddingId], references: [id], onDelete: Restrict)
+  coverImage    MediaAsset?    @relation("DreamCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  contributions Contribution[]
+
+  @@index([weddingId, deletedAt, displayOrder])
+}
+
+// ───────────────────────── Contributions and payments ─────────────────────────
+
+model Contribution {
+  id                   String             @id @default(uuid(7)) @db.Uuid
+  dreamId              String             @db.Uuid
+  weddingId            String             @db.Uuid
+  guestName            String
+  guestEmail           String
+  isAnonymous          Boolean            @default(false)
+  amountPaise          Int
+  platformFeePaise     Int                @default(0)
+  totalPaise           Int
+  currency             String             @default("INR") @db.Char(3)
+  status               ContributionStatus @default(PENDING)
+  // Client-generated per checkout attempt; makes repeated submits return the same row.
+  idempotencyKey       String             @unique
+  // Unguessable token for the guest's acknowledgment page (guests have no account).
+  acknowledgmentToken  String             @unique
+  consentAcceptedAt    DateTime
+  confirmedAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  dream   Dream         @relation(fields: [dreamId], references: [id], onDelete: Restrict)
+  wedding Wedding       @relation(fields: [weddingId], references: [id], onDelete: Restrict)
+  payment Payment?
+  message GuestMessage?
+
+  @@index([weddingId, status, confirmedAt(sort: Desc)])
+  @@index([dreamId, status])
+  @@index([guestEmail])
+  @@index([status, createdAt])
+}
+
+model Payment {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  contributionId    String          @unique @db.Uuid
+  provider          PaymentProvider
+  mode              PaymentMode
+  providerOrderId   String
+  providerPaymentId String?
+  status            PaymentStatus   @default(CREATED)
+  amountPaise       Int
+  currency          String          @default("INR") @db.Char(3)
+  method            String?
+  failureCode       String?
+  failureReason     String?
+  refundedPaise     Int             @default(0)
+  capturedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  contribution Contribution              @relation(fields: [contributionId], references: [id], onDelete: Restrict)
+  transitions  PaymentStatusTransition[]
+  events       PaymentEvent[]
+  refunds      Refund[]
+  settlements  SettlementRecord[]
+
+  @@unique([provider, providerOrderId])
+  @@unique([provider, providerPaymentId])
+  @@index([status, createdAt])
+  @@index([mode, status])
+}
+
+// Append-only history of every status change: the transaction audit trail.
+model PaymentStatusTransition {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  paymentId  String           @db.Uuid
+  fromStatus PaymentStatus?
+  toStatus   PaymentStatus
+  source     TransitionSource
+  eventId    String?          @db.Uuid
+  note       String?
+  createdAt  DateTime         @default(now())
+
+  payment Payment       @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  event   PaymentEvent? @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, createdAt])
+}
+
+// Every webhook delivery is stored before it is processed.
+model PaymentEvent {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  provider        PaymentProvider
+  providerEventId String
+  eventType       String
+  paymentId       String?            @db.Uuid
+  payload         Json
+  status          PaymentEventStatus @default(RECEIVED)
+  error           String?
+  receivedAt      DateTime           @default(now())
+  processedAt     DateTime?
+
+  payment     Payment?                  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  transitions PaymentStatusTransition[]
+
+  @@unique([provider, providerEventId])
+  @@index([status, receivedAt])
+  @@index([paymentId])
+}
+
+model Refund {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  paymentId         String          @db.Uuid
+  provider          PaymentProvider
+  providerRefundId  String?
+  amountPaise       Int
+  status            RefundStatus    @default(REQUESTED)
+  reason            String
+  initiatedByUserId String?         @db.Uuid
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  payment     Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  initiatedBy User?   @relation(fields: [initiatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerRefundId])
+  @@index([paymentId])
+}
+
+// Read-only mirror of what the provider reports it settled. VowFund never moves money itself.
+model SettlementRecord {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  paymentId            String           @db.Uuid
+  weddingId            String           @db.Uuid
+  provider             PaymentProvider
+  providerTransferId   String?
+  providerSettlementId String?
+  amountPaise          Int
+  status               SettlementStatus @default(PENDING)
+  settledAt            DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerTransferId])
+  @@index([weddingId, status])
+  @@index([paymentId])
+}
+
+// ───────────────────────── Messages and media ─────────────────────────
+
+model GuestMessage {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  contributionId String            @unique @db.Uuid
+  weddingId      String            @db.Uuid
+  body           String
+  visibility     MessageVisibility @default(PUBLIC)
+  moderation     ModerationStatus  @default(VISIBLE)
+  // The couple's personal thank-you to this guest.
+  coupleReply    String?
+  repliedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Restrict)
+  wedding      Wedding      @relation(fields: [weddingId], references: [id], onDelete: Restrict)
+
+  @@index([weddingId, moderation, visibility, createdAt(sort: Desc)])
+}
+
+model MediaAsset {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  coupleId         String    @db.Uuid
+  kind             MediaKind
+  providerPublicId String    @unique
+  url              String
+  mimeType         String
+  bytes            Int
+  width            Int
+  height           Int
+  createdAt        DateTime  @default(now())
+
+  couple      Couple   @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  heroFor     Wedding? @relation("WeddingHero")
+  coverForDream Dream? @relation("DreamCover")
+
+  @@index([coupleId])
+}
+
+// ───────────────────────── Platform ─────────────────────────
+
+// Transactional outbox for email (see ADR 0005).
+model Notification {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  type        String
+  recipient   String
+  payload     Json
+  status      NotificationStatus @default(PENDING)
+  attempts    Int                @default(0)
+  lastError   String?
+  // e.g. "gift-receipt:<contributionId>" so a retried transaction never double-sends.
+  dedupeKey   String             @unique
+  scheduledAt DateTime           @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime           @default(now())
+
+  @@index([status, scheduledAt])
+}
+
+model AuditLog {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  actorType   AuditActorType
+  actorUserId String?        @db.Uuid
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime       @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([createdAt])
+}
+
+// Privacy-conscious product analytics: no IP, no email, only a daily-rotating session hash.
+model AnalyticsEvent {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  name        String
+  weddingId   String?  @db.Uuid
+  dreamId     String?  @db.Uuid
+  sessionHash String?
+  properties  Json?
+  createdAt   DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([weddingId, name, createdAt])
+}
+
+model ContentReport {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  weddingId     String       @db.Uuid
+  reason        String
+  details       String?
+  reporterEmail String?
+  status        ReportStatus @default(OPEN)
+  resolvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+
+  wedding Wedding @relation(fields: [weddingId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+}
+
+model SupportRequest {
+  id        String        @id @default(uuid(7)) @db.Uuid
+  email     String
+  subject   String
+  body      String
+  status    SupportStatus @default(OPEN)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// Admin-editable settings: suggested amounts, min/max contribution, fee percentage.
+model PlatformConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

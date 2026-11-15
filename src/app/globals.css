@@ -1,0 +1,216 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * VowFund design tokens.
+ * Semantic tokens (background, primary, accent...) are what components use.
+ * The platform itself uses the default set on :root. A wedding page switches the
+ * whole set by putting data-theme on its wrapper; see src/components/themes.
+ */
+
+@theme inline {
+  /* Colour */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-success: var(--success);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Typography */
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display), ui-serif, Georgia, serif;
+  --font-heading: var(--heading-family);
+
+  --text-display: clamp(2.75rem, 6vw + 1rem, 5rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: clamp(2.125rem, 3.5vw + 1rem, 3.25rem);
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: clamp(1.625rem, 2vw + 1rem, 2.25rem);
+  --text-h2--line-height: 1.15;
+  --text-h3: 1.375rem;
+  --text-h3--line-height: 1.25;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.6;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.18em;
+
+  /* Shape */
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+
+  /* Elevation: soft, warm, never harsh */
+  --shadow-soft: 0 1px 2px rgb(60 45 20 / 0.04), 0 8px 24px -8px rgb(60 45 20 / 0.1);
+  --shadow-lift: 0 2px 4px rgb(60 45 20 / 0.05), 0 20px 40px -16px rgb(60 45 20 / 0.18);
+
+  /* Layout */
+  --container-prose: 40rem;
+  --container-page: 72rem;
+}
+
+/* Default: the VowFund brand, and the "Minimal Ivory" wedding theme. */
+:root,
+[data-theme="minimal-ivory"] {
+  --radius: 0.75rem;
+  --heading-family: var(--font-serif);
+
+  --background: #fbf8f2; /* warm ivory */
+  --foreground: #2b2926; /* deep charcoal */
+  --card: #ffffff;
+  --card-foreground: #2b2926;
+  --popover: #ffffff;
+  --popover-foreground: #2b2926;
+  --primary: #2b2926;
+  --primary-foreground: #fbf8f2;
+  --secondary: #f1eadc; /* pale champagne */
+  --secondary-foreground: #2b2926;
+  --muted: #f4efe6;
+  --muted-foreground: #6a6359;
+  --accent: #e9ddc5; /* champagne */
+  --accent-foreground: #2b2926;
+  --gold: #b3924f; /* decoration only: rules, progress, icons */
+  --gold-ink: #7d5f24; /* gold that is readable as text on ivory */
+  --success: #3f6b4f;
+  --destructive: #a63a2b;
+  --border: #e6decf;
+  --input: #d6cbb6;
+  --ring: #b3924f;
+}
+
+[data-theme="royal-indian"] {
+  --radius: 0.375rem;
+  --heading-family: var(--font-serif);
+
+  --background: #faf2e4;
+  --foreground: #3a1418;
+  --card: #fffaf0;
+  --card-foreground: #3a1418;
+  --popover: #fffaf0;
+  --popover-foreground: #3a1418;
+  --primary: #6b1a22; /* deep maroon */
+  --primary-foreground: #fbefd9;
+  --secondary: #f1dfbd;
+  --secondary-foreground: #3a1418;
+  --muted: #f3e6cd;
+  --muted-foreground: #6e4a41;
+  --accent: #e8c987; /* marigold gold */
+  --accent-foreground: #3a1418;
+  --gold: #b0832a;
+  --gold-ink: #7a5712;
+  --success: #3f6b4f;
+  --destructive: #9c2f22;
+  --border: #e3cfa8;
+  --input: #d3b987;
+  --ring: #b0832a;
+}
+
+[data-theme="modern-editorial"] {
+  --radius: 0rem;
+  --heading-family: var(--font-serif);
+
+  --background: #ffffff;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f1ed;
+  --secondary-foreground: #111111;
+  --muted: #f6f5f2;
+  --muted-foreground: #5c5a55;
+  --accent: #ece8e1;
+  --accent-foreground: #111111;
+  --gold: #b4532a; /* terracotta in place of gold */
+  --gold-ink: #94421f;
+  --success: #2f5d43;
+  --destructive: #a12a1c;
+  --border: #dcd9d2;
+  --input: #c9c5bc;
+  --ring: #111111;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    text-rendering: optimizeLegibility;
+  }
+  [data-theme] {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--heading-family);
+    font-weight: 500;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility eyebrow {
+  font-size: var(--text-eyebrow);
+  letter-spacing: var(--text-eyebrow--letter-spacing);
+  line-height: 1;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--gold-ink);
+}
+
+/* A thin gold rule with a centred diamond, used between sections. */
+@utility ornament-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--gold);
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.5;
+  }
+}

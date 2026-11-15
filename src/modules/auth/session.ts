@@ -1,0 +1,32 @@
+import "server-only";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { UnauthenticatedError } from "@/lib/errors";
+import { getAuth } from "./auth";
+
+/** The signed-in person performing an action. Passed to every service function. */
+export interface Actor {
+  userId: string;
+  email: string;
+}
+
+/** The current signed-in user, or null. Reads the session cookie, so call inside Suspense. */
+export async function getActor(): Promise<Actor | null> {
+  const session = await getAuth().api.getSession({ headers: await headers() });
+  if (!session) return null;
+  return { userId: session.user.id, email: session.user.email };
+}
+
+/** For pages: sends visitors who are not signed in to the sign-in screen. */
+export async function requireActorOrRedirect(): Promise<Actor> {
+  const actor = await getActor();
+  if (!actor) redirect("/sign-in");
+  return actor;
+}
+
+/** For server actions and API routes: fails with a 401-style error. */
+export async function requireActor(): Promise<Actor> {
+  const actor = await getActor();
+  if (!actor) throw new UnauthenticatedError();
+  return actor;
+}
