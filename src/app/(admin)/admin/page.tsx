@@ -1,10 +1,10 @@
+import { NotFoundMessage } from "@/components/not-found-message";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/couple/app-shell";
 import { formatPaise } from "@/lib/money";
 import { getMetrics } from "@/modules/admin/admin.service";
-import { requireAdminOrNotFound } from "@/modules/auth/session";
+import { getAdminActor } from "@/modules/auth/session";
 import { DREAM_CATEGORY_LABELS, type DreamCategory } from "@/modules/dream/dream.schema";
-import { AdminHeading, EmptyRow, FilterLinks, Table, Td } from "./admin-ui";
+import { AdminFrame, AdminHeading, EmptyRow, FilterLinks, Table, Td } from "./admin-ui";
 
 type Props = { searchParams: Promise<{ mode?: string }> };
 
@@ -12,7 +12,8 @@ const percent = (value: number | null) =>
   value === null ? "No data yet" : `${(value * 100).toFixed(1)}%`;
 
 async function Overview({ searchParams }: Props) {
-  const actor = await requireAdminOrNotFound();
+  const actor = await getAdminActor();
+  if (!actor) return <NotFoundMessage />;
   const { mode: rawMode } = await searchParams;
   const mode = rawMode === "TEST" || rawMode === "LIVE" ? rawMode : null;
   const metrics = await getMetrics(actor, mode);
@@ -42,7 +43,7 @@ async function Overview({ searchParams }: Props) {
   ];
 
   return (
-    <>
+    <AdminFrame>
       <AdminHeading title="Overview">
         <FilterLinks
           base="/admin"
@@ -82,13 +83,13 @@ async function Overview({ searchParams }: Props) {
           ))
         )}
       </Table>
-    </>
+    </AdminFrame>
   );
 }
 
 export default function AdminOverviewPage({ searchParams }: Props) {
   return (
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<div className="flex-1" aria-busy="true" />}>
       <Overview searchParams={searchParams} />
     </Suspense>
   );

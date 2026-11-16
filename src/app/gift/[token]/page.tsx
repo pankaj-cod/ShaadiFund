@@ -1,6 +1,6 @@
+import { NotFoundMessage } from "@/components/not-found-message";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DemoNotice } from "@/components/checkout/demo-notice";
 import { ThemeScope } from "@/components/themes/theme-scope";
@@ -94,7 +94,14 @@ function NotCompleted({ gift }: { gift: GiftView }) {
 async function Gift({ params }: Props) {
   const { token } = await params;
   const gift = await getGiftView(token);
-  if (!gift) notFound();
+  if (!gift) {
+    return (
+      <NotFoundMessage
+        title="We could not find that gift"
+        detail="Please use the link from your confirmation email."
+      />
+    );
+  }
 
   return (
     <ThemeScope theme={gift.theme} className="flex min-h-svh flex-1 flex-col">

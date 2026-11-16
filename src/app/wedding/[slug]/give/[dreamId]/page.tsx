@@ -1,6 +1,6 @@
+import { WeddingNotFound } from "@/components/not-found-message";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { TrackView } from "@/components/analytics/track-view";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
@@ -21,7 +21,7 @@ async function Checkout({ params }: Props) {
   const { slug, dreamId } = await params;
   const wedding = await getCachedPublicWedding(slug);
   const dream = wedding?.dreams.find((candidate) => candidate.id === dreamId);
-  if (!wedding || !dream) notFound();
+  if (!wedding || !dream) return <WeddingNotFound />;
   const names = coupleNames(wedding.partnerOneName, wedding.partnerTwoName);
 
   return (

@@ -429,11 +429,37 @@ describe.skipIf(!hasDatabase)("guest contributions and payments", () => {
         where: { dedupeKey: { contains: session.contributionId } },
       });
       expect(after.every((n) => n.status === "SENT" && n.sentAt !== null)).toBe(true);
+      // A message whose sender died mid-send is picked up again once its hold expires.
+      const stuck = after[0]!;
+      await db.notification.update({
+        where: { id: stuck.id },
+        data: { status: "SENDING", sentAt: null, scheduledAt: new Date(Date.now() - 1000) },
+      });
+      await dispatchNotifications(200);
+      expect((await db.notification.findUniqueOrThrow({ where: { id: stuck.id } })).status).toBe(
+        "SENT",
+      );
+      // ...but not while another sender still holds it.
+      await db.notification.update({
+        where: { id: stuck.id },
+        data: { status: "SENDING", scheduledAt: new Date(Date.now() + 5 * 60 * 1000) },
+      });
+      await dispatchNotifications(200);
+      expect((await db.notification.findUniqueOrThrow({ where: { id: stuck.id } })).status).toBe(
+        "SENDING",
+      );
+      await db.notification.update({ where: { id: stuck.id }, data: { status: "SENT" } });
+
       // Running the dispatcher again sends nothing twice.
-      const sentAt = after.map((n) => n.sentAt?.getTime());
+      const settled = await db.notification.findMany({
+        where: { dedupeKey: { contains: session.contributionId } },
+        orderBy: { id: "asc" },
+      });
+      const sentAt = settled.map((n) => n.sentAt?.getTime());
       await dispatchNotifications(200);
       const again = await db.notification.findMany({
         where: { dedupeKey: { contains: session.contributionId } },
+        orderBy: { id: "asc" },
       });
       expect(again.map((n) => n.sentAt?.getTime())).toEqual(sentAt);
     });

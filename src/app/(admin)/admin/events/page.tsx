@@ -1,23 +1,25 @@
+import { NotFoundMessage } from "@/components/not-found-message";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/couple/app-shell";
 import { formatDateTime } from "@/lib/format";
 import { getPaymentEvents } from "@/modules/admin/admin.service";
-import { requireAdminOrNotFound } from "@/modules/auth/session";
-import { AdminHeading, Badge, EmptyRow, FilterLinks, Table, Td } from "../admin-ui";
+import { getAdminActor } from "@/modules/auth/session";
+import { AdminFrame, AdminHeading, Badge, EmptyRow, FilterLinks, Table, Td } from "../admin-ui";
 
 type Props = { searchParams: Promise<{ status?: string }> };
 
 export const metadata: Metadata = { title: "Webhook events" };
 
 async function Events({ searchParams }: Props) {
-  const actor = await requireAdminOrNotFound();
+  const actor = await getAdminActor();
+  if (!actor) return <NotFoundMessage />;
   const { status } = await searchParams;
   const events = await getPaymentEvents(actor, { status });
 
   return (
-    <>
+    <AdminFrame>
+      <AdminHeading title="Webhook events" />
       <div className="mb-4">
         <FilterLinks
           base="/admin/events"
@@ -70,17 +72,14 @@ async function Events({ searchParams }: Props) {
         Showing the latest 100. A failed event is retried by the provider, and the scheduled
         reconciliation job independently recovers any payment that was actually made.
       </p>
-    </>
+    </AdminFrame>
   );
 }
 
 export default function AdminEventsPage({ searchParams }: Props) {
   return (
-    <>
-      <AdminHeading title="Webhook events" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Events searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<div className="flex-1" aria-busy="true" />}>
+      <Events searchParams={searchParams} />
+    </Suspense>
   );
 }

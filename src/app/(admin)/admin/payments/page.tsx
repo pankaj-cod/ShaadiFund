@@ -1,12 +1,21 @@
+import { NotFoundMessage } from "@/components/not-found-message";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/couple/app-shell";
 import { formatDateTime } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { getPayments } from "@/modules/admin/admin.service";
-import { requireAdminOrNotFound } from "@/modules/auth/session";
-import { AdminHeading, Badge, EmptyRow, FilterLinks, OlderLink, Table, Td } from "../admin-ui";
+import { getAdminActor } from "@/modules/auth/session";
+import {
+  AdminFrame,
+  AdminHeading,
+  Badge,
+  EmptyRow,
+  FilterLinks,
+  OlderLink,
+  Table,
+  Td,
+} from "../admin-ui";
 
 type Props = { searchParams: Promise<{ status?: string; cursor?: string }> };
 
@@ -21,7 +30,8 @@ const STATUS_FILTERS = [
 ];
 
 async function Payments({ searchParams }: Props) {
-  const actor = await requireAdminOrNotFound();
+  const actor = await getAdminActor();
+  if (!actor) return <NotFoundMessage />;
   const { status, cursor } = await searchParams;
   const page = await getPayments(actor, { status }, cursor);
   const older = page.nextCursor
@@ -29,7 +39,8 @@ async function Payments({ searchParams }: Props) {
     : null;
 
   return (
-    <>
+    <AdminFrame>
+      <AdminHeading title="Payments" />
       <div className="mb-4">
         <FilterLinks
           base="/admin/payments"
@@ -73,17 +84,14 @@ async function Payments({ searchParams }: Props) {
         )}
       </Table>
       <OlderLink href={older} />
-    </>
+    </AdminFrame>
   );
 }
 
 export default function AdminPaymentsPage({ searchParams }: Props) {
   return (
-    <>
-      <AdminHeading title="Payments" />
-      <Suspense fallback={<PageSkeleton />}>
-        <Payments searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<div className="flex-1" aria-busy="true" />}>
+      <Payments searchParams={searchParams} />
+    </Suspense>
   );
 }

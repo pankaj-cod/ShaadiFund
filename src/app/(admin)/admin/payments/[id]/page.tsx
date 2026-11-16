@@ -1,13 +1,12 @@
+import { NotFoundMessage } from "@/components/not-found-message";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/couple/app-shell";
 import { formatDateTime } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { getPayment } from "@/modules/admin/admin.service";
-import { requireAdminOrNotFound } from "@/modules/auth/session";
-import { AdminHeading, Badge, EmptyRow, Table, Td } from "../../admin-ui";
+import { getAdminActor } from "@/modules/auth/session";
+import { AdminFrame, AdminHeading, Badge, EmptyRow, Table, Td } from "../../admin-ui";
 import { RefundButton } from "./refund-button";
 
 type Props = { params: Promise<{ id: string }> };
@@ -15,10 +14,11 @@ type Props = { params: Promise<{ id: string }> };
 export const metadata: Metadata = { title: "Payment" };
 
 async function Payment({ params }: Props) {
-  const actor = await requireAdminOrNotFound();
+  const actor = await getAdminActor();
+  if (!actor) return <NotFoundMessage />;
   const { id } = await params;
   const payment = await getPayment(actor, id);
-  if (!payment) notFound();
+  if (!payment) return <NotFoundMessage />;
   const { contribution } = payment;
 
   const facts: [string, string][] = [
@@ -40,7 +40,16 @@ async function Payment({ params }: Props) {
   }
 
   return (
-    <>
+    <AdminFrame>
+      <Link
+        href="/admin/payments"
+        className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+      >
+        All payments
+      </Link>
+      <div className="mt-3">
+        <AdminHeading title="Payment" />
+      </div>
       <div className="mb-6 flex flex-wrap items-center gap-4">
         <Badge>{payment.status}</Badge>
         {payment.status === "CAPTURED" ? (
@@ -108,25 +117,14 @@ async function Payment({ params }: Props) {
           ))
         )}
       </Table>
-    </>
+    </AdminFrame>
   );
 }
 
 export default function AdminPaymentPage({ params }: Props) {
   return (
-    <>
-      <Link
-        href="/admin/payments"
-        className="text-muted-foreground text-sm underline-offset-4 hover:underline"
-      >
-        All payments
-      </Link>
-      <div className="mt-3">
-        <AdminHeading title="Payment" />
-      </div>
-      <Suspense fallback={<PageSkeleton />}>
-        <Payment params={params} />
-      </Suspense>
-    </>
+    <Suspense fallback={<div className="flex-1" aria-busy="true" />}>
+      <Payment params={params} />
+    </Suspense>
   );
 }

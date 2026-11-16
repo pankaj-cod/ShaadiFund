@@ -1,5 +1,6 @@
+import { NotFoundMessage } from "@/components/not-found-message";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell, PageSkeleton } from "@/components/couple/app-shell";
 import { getEnv } from "@/lib/env";
@@ -15,10 +16,10 @@ export const metadata: Metadata = {
 };
 
 async function Checkout({ params }: Props) {
-  if (getEnv().PAYMENTS_MODE !== "mock") notFound();
+  if (getEnv().PAYMENTS_MODE !== "mock") return <NotFoundMessage />;
   const { token } = await params;
   const gift = await getGiftView(token);
-  if (!gift || gift.provider !== "MOCK") notFound();
+  if (!gift || gift.provider !== "MOCK") return <NotFoundMessage />;
   if (gift.status === "CONFIRMED") redirect(`/gift/${token}`);
 
   return (

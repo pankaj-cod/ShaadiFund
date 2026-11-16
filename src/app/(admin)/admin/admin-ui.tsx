@@ -1,8 +1,41 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { SignOutButton } from "@/components/couple/sign-out-button";
 import { cn } from "@/lib/utils";
 
 /** Small shared pieces for the admin console: plain, dense and readable. */
+
+const LINKS = [
+  ["/admin", "Overview"],
+  ["/admin/couples", "Couples"],
+  ["/admin/payments", "Payments"],
+  ["/admin/events", "Webhook events"],
+  ["/admin/audit", "Audit log"],
+] as const;
+
+/** Header, navigation and page column. Render only after the admin check has passed. */
+export function AdminFrame({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <header className="border-b">
+        <div className="max-w-page mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-3">
+          <Link href="/admin" className="font-heading text-xl font-medium italic">
+            VowFund <span className="text-muted-foreground text-sm not-italic">admin</span>
+          </Link>
+          <nav aria-label="Admin" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+            {LINKS.map(([href, label]) => (
+              <Link key={href} href={href} className="underline-offset-4 hover:underline">
+                {label}
+              </Link>
+            ))}
+          </nav>
+          <SignOutButton />
+        </div>
+      </header>
+      <main className="max-w-page mx-auto w-full flex-1 px-6 py-10">{children}</main>
+    </>
+  );
+}
 
 export function AdminHeading({ title, children }: { title: string; children?: ReactNode }) {
   return (

@@ -19,15 +19,19 @@ export async function enqueueNotification(tx: Db, message: OutboxMessage): Promi
 /**
  * Claims a batch of due messages. SKIP LOCKED means two dispatchers running at
  * once never pick the same row, so nothing is sent twice.
+ *
+ * A claimed row is hidden for five minutes. If the process sending it dies, the
+ * row becomes due again after that, instead of being stuck as SENDING forever.
  */
 export async function claimDueNotifications(limit: number, db: Db = getDb()) {
   return db.$queryRaw<
     { id: string; type: string; recipient: string; payload: unknown; attempts: number }[]
   >`
-    UPDATE "Notification" SET "status" = 'SENDING', "attempts" = "attempts" + 1
+    UPDATE "Notification"
+    SET "status" = 'SENDING', "attempts" = "attempts" + 1, "scheduledAt" = now() + interval '5 minutes'
     WHERE "id" IN (
       SELECT "id" FROM "Notification"
-      WHERE "status" IN ('PENDING', 'FAILED')
+      WHERE "status" IN ('PENDING', 'FAILED', 'SENDING')
         AND "attempts" < ${MAX_ATTEMPTS}
         AND "scheduledAt" <= now()
       ORDER BY "scheduledAt"

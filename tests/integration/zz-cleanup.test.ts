@@ -19,6 +19,12 @@ describe.skipIf(!hasDatabase)("leftover test data", () => {
       select: { email: true },
     });
     for (const { email } of stale) await deleteTestUsers(db, email);
+    await db.notification.deleteMany({
+      where: {
+        recipient: { endsWith: ".vowfund.test" },
+        createdAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+      },
+    });
     expect(
       await db.user.count({
         where: {

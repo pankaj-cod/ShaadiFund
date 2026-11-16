@@ -1,5 +1,5 @@
+import { WeddingNotFound } from "@/components/not-found-message";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getEnv, isDemoPayments } from "@/lib/env";
 import { TrackView } from "@/components/analytics/track-view";
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function Wedding({ params }: Props) {
   const { slug } = await params;
   const wedding = await getCachedPublicWedding(slug);
-  if (!wedding) notFound();
+  if (!wedding) return <WeddingNotFound />;
   return (
     <>
       <TrackView name="wedding_page_viewed" slug={wedding.slug} />

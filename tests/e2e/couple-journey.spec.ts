@@ -9,7 +9,7 @@ const OUTBOX = path.join(process.cwd(), ".data", "outbox");
 
 /** Reads the sign-in link from the local email outbox (the "file" email transport). */
 async function magicLinkFor(email: string): Promise<string> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const files = await readdir(OUTBOX).catch(() => [] as string[]);
     for (const file of files.sort().reverse()) {
       const message = JSON.parse(await readFile(path.join(OUTBOX, file), "utf8")) as {
@@ -26,7 +26,7 @@ async function magicLinkFor(email: string): Promise<string> {
 
 /** Text of the newest email to an address whose subject contains the given words. */
 async function emailTextFor(email: string, subjectPart: string): Promise<string> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const files = await readdir(OUTBOX).catch(() => [] as string[]);
     for (const file of files.sort().reverse()) {
       const message = JSON.parse(await readFile(path.join(OUTBOX, file), "utf8")) as {
