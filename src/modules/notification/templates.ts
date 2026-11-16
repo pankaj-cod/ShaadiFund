@@ -11,7 +11,7 @@ function escapeHtml(value: string): string {
 function layout(heading: string, bodyHtml: string): string {
   return `<!doctype html><html lang="en"><body style="margin:0;background:#fbf8f2;font-family:Helvetica,Arial,sans-serif;color:#2b2926">
 <div style="max-width:480px;margin:0 auto;padding:40px 24px">
-<p style="letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:#7d5f24;margin:0 0 24px">VowFund</p>
+<p style="letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:#7d5f24;margin:0 0 24px">ShaadiFund</p>
 <h1 style="font-family:Georgia,serif;font-weight:500;font-size:26px;margin:0 0 16px">${escapeHtml(heading)}</h1>
 ${bodyHtml}
 </div></body></html>`;
@@ -20,10 +20,10 @@ ${bodyHtml}
 export function magicLinkEmail(url: string): { subject: string; text: string; html: string } {
   const safeUrl = escapeHtml(url);
   return {
-    subject: "Your sign-in link for VowFund",
-    text: `Sign in to VowFund with this link. It works once and expires in 15 minutes.\n\n${url}\n\nIf you did not ask for this, you can ignore this email.`,
+    subject: "Your sign-in link for ShaadiFund",
+    text: `Sign in to ShaadiFund with this link. It works once and expires in 15 minutes.\n\n${url}\n\nIf you did not ask for this, you can ignore this email.`,
     html: layout(
-      "Sign in to VowFund",
+      "Sign in to ShaadiFund",
       `<p style="line-height:1.6;margin:0 0 24px">This link signs you in. It works once and expires in 15 minutes.</p>
 <p style="margin:0 0 24px"><a href="${safeUrl}" style="display:inline-block;background:#2b2926;color:#fbf8f2;text-decoration:none;padding:14px 24px;border-radius:10px">Sign in</a></p>
 <p style="line-height:1.6;font-size:13px;color:#6a6359;margin:0">If you did not ask for this, you can ignore this email.</p>`,

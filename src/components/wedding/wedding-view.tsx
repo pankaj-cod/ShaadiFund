@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { DemoNotice } from "@/components/checkout/demo-notice";
+import { DreamArt } from "@/components/dream/dream-art";
 import { ThemeScope } from "@/components/themes/theme-scope";
 import { Button } from "@/components/ui/button";
 import { FundingProgress } from "@/components/ui/funding-progress";
+import { TiltCard } from "@/components/ui/tilt-card";
 import { coupleNames, formatCalendarDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { DREAM_CATEGORY_LABELS } from "@/modules/dream/dream.schema";
@@ -38,10 +40,19 @@ function Hero({ wedding }: { wedding: PublicWedding }) {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
         <div className="max-w-page mx-auto w-full px-6 pt-32 pb-14 text-white sm:pb-20">
-          <p className="text-eyebrow font-semibold uppercase opacity-90">The wedding of</p>
-          <h1 className="text-display mt-4 italic">{names}</h1>
+          <p className="text-eyebrow animate-rise font-semibold uppercase opacity-90">
+            The wedding of
+          </p>
+          <h1 className="text-display animate-rise mt-4 italic" style={{ animationDelay: "120ms" }}>
+            {names}
+          </h1>
           {details.length > 0 ? (
-            <p className="text-lead mt-5 opacity-95">{details.join(" · ")}</p>
+            <p
+              className="text-lead animate-rise mt-5 opacity-95"
+              style={{ animationDelay: "240ms" }}
+            >
+              {details.join(" · ")}
+            </p>
           ) : null}
         </div>
       </header>
@@ -50,10 +61,17 @@ function Hero({ wedding }: { wedding: PublicWedding }) {
 
   return (
     <header className="max-w-page mx-auto px-6 pt-24 pb-16 text-center sm:pt-32">
-      <p className="eyebrow">The wedding of</p>
-      <h1 className="text-display mt-6 italic">{names}</h1>
+      <p className="eyebrow animate-rise">The wedding of</p>
+      <h1 className="text-display animate-rise mt-6 italic" style={{ animationDelay: "120ms" }}>
+        {names}
+      </h1>
       {details.length > 0 ? (
-        <p className="text-lead text-muted-foreground mt-6">{details.join(" · ")}</p>
+        <p
+          className="text-lead text-muted-foreground animate-rise mt-6"
+          style={{ animationDelay: "240ms" }}
+        >
+          {details.join(" · ")}
+        </p>
       ) : null}
       <div className="mt-12">
         <Ornament />
@@ -64,67 +82,77 @@ function Hero({ wedding }: { wedding: PublicWedding }) {
 
 function DreamCard({ dream, giveHref }: { dream: PublicDream; giveHref: string | null }) {
   return (
-    <li className="bg-card shadow-soft flex w-full flex-col overflow-hidden rounded-xl border sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]">
-      <div className="bg-accent relative aspect-[4/3]">
-        {dream.coverImage ? (
-          <Image
-            src={dream.coverImage.url}
-            alt=""
-            fill
-            unoptimized
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="text-gold-ink flex h-full items-center justify-center" aria-hidden="true">
-            <span className="font-heading text-5xl italic opacity-40">
-              {dream.title.charAt(0).toUpperCase()}
-            </span>
+    <li className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]">
+      <TiltCard>
+        <article className="bg-card shadow-soft hover:shadow-lift flex h-full flex-col overflow-hidden rounded-2xl border transition-shadow duration-300">
+          <div className="bg-accent relative aspect-[4/3]">
+            {dream.coverImage ? (
+              <Image
+                src={dream.coverImage.url}
+                alt=""
+                fill
+                unoptimized
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover"
+              />
+            ) : (
+              <DreamArt category={dream.category} />
+            )}
           </div>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col p-6">
-        <p className="eyebrow">{DREAM_CATEGORY_LABELS[dream.category]}</p>
-        <h3 className="text-h3 mt-3">{dream.title}</h3>
-        <p className="text-muted-foreground mt-2 flex-1 leading-relaxed whitespace-pre-line">
-          {dream.description}
-        </p>
-        <div className="mt-6">
-          {dream.fundedPaise !== null ? (
-            <FundingProgress
-              label={dream.title}
-              fundedPaise={dream.fundedPaise}
-              targetPaise={dream.targetPaise}
-            />
-          ) : (
-            <p className="text-sm">
-              <span className="text-muted-foreground">A dream of </span>
-              <span className="font-medium">{formatPaise(dream.targetPaise)}</span>
+          <div className="flex flex-1 flex-col p-6">
+            <p className="eyebrow">{DREAM_CATEGORY_LABELS[dream.category]}</p>
+            <h3 className="text-h3 mt-3">{dream.title}</h3>
+            <p className="text-muted-foreground mt-2 flex-1 leading-relaxed whitespace-pre-line">
+              {dream.description}
             </p>
-          )}
-        </div>
-        {giveHref ? (
-          <Button asChild size="lg" className="mt-6 w-full">
-            <Link href={giveHref} aria-label={`Contribute to ${dream.title}`}>
-              Contribute
-            </Link>
-          </Button>
-        ) : null}
-      </div>
+            <div className="mt-6">
+              {dream.fundedPaise !== null ? (
+                <FundingProgress
+                  label={dream.title}
+                  fundedPaise={dream.fundedPaise}
+                  targetPaise={dream.targetPaise}
+                />
+              ) : (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">A dream of </span>
+                  <span className="font-medium">{formatPaise(dream.targetPaise)}</span>
+                </p>
+              )}
+            </div>
+            {giveHref ? (
+              <Button asChild size="lg" className="mt-6 w-full">
+                <Link href={giveHref} aria-label={`Contribute to ${dream.title}`}>
+                  Contribute
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        </article>
+      </TiltCard>
     </li>
   );
 }
 
 interface WeddingViewProps {
   wedding: PublicWedding;
-  /** Shown to the couple before publishing. */
+  /** No contribute buttons: used for the couple's preview and the public demo. */
   preview?: boolean;
+  /** Replaces the default preview notice. */
+  banner?: string;
+  /** Where the banner's "back" link goes, if anywhere. */
+  backHref?: string;
   /** True while payments are not live. */
   demo: boolean;
 }
 
 /** The public wedding page. Receives only guest-safe data. */
-export function WeddingView({ wedding, preview = false, demo }: WeddingViewProps) {
+export function WeddingView({
+  wedding,
+  preview = false,
+  demo,
+  banner,
+  backHref,
+}: WeddingViewProps) {
   return (
     <ThemeScope theme={wedding.theme} className="flex min-h-svh flex-1 flex-col">
       {preview ? (
@@ -132,7 +160,15 @@ export function WeddingView({ wedding, preview = false, demo }: WeddingViewProps
           role="status"
           className="bg-primary text-primary-foreground px-6 py-2.5 text-center text-sm"
         >
-          Preview. This is how your page will look to guests.
+          {banner ?? "Preview. This is how your page will look to guests."}
+          {backHref ? (
+            <>
+              {" "}
+              <Link href={backHref} className="underline underline-offset-4">
+                Back to ShaadiFund
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
 
@@ -224,7 +260,7 @@ export function WeddingView({ wedding, preview = false, demo }: WeddingViewProps
       </main>
 
       <footer className="text-muted-foreground px-6 py-10 text-center text-sm">
-        Made with <span className="text-foreground font-medium">VowFund</span>
+        Made with <span className="text-foreground font-medium">ShaadiFund</span>
       </footer>
     </ThemeScope>
   );

@@ -1,4 +1,4 @@
-// VowFund database schema (Phase 1 design).
+// ShaadiFund database schema (Phase 1 design).
 // Conventions:
 //   - All ids are UUIDs. Nothing sequential is ever exposed.
 //   - All money is integer paise (INR smallest unit). Never floats.
@@ -435,7 +435,7 @@ model Refund {
   @@index([paymentId])
 }
 
-// Read-only mirror of what the provider reports it settled. VowFund never moves money itself.
+// Read-only mirror of what the provider reports it settled. ShaadiFund never moves money itself.
 model SettlementRecord {
   id                   String           @id @default(uuid(7)) @db.Uuid
   paymentId            String           @db.Uuid

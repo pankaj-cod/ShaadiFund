@@ -59,7 +59,7 @@ async function fillGift(
   if (gift.privateMessage) {
     await guest.getByRole("checkbox", { name: /Keep my message private/ }).check();
   }
-  await guest.getByRole("checkbox", { name: /I agree that VowFund/ }).check();
+  await guest.getByRole("checkbox", { name: /I agree that ShaadiFund/ }).check();
 }
 
 /** Grants the admin role the only way it can be granted: directly in the database. */
@@ -111,7 +111,7 @@ test("a couple signs in, completes onboarding, publishes, and a guest sees the p
 }, testInfo) => {
   test.setTimeout(240_000);
   const id = `${testInfo.project.name}${Date.now().toString(36)}`;
-  const email = `couple-${id}@e2e.vowfund.test`;
+  const email = `couple-${id}@e2e.shaadifund.test`;
   const one = `Riya${id}`;
   const two = `Rahul${id}`;
   const slug = `${one}-and-${two}`.toLowerCase();
@@ -219,7 +219,7 @@ test("a couple signs in, completes onboarding, publishes, and a guest sees the p
   await expect(page.getByRole("heading", { name: "Our first car" })).toHaveCount(0);
 
   // ── A guest contributes ──
-  const guestEmail = `guest-${id}@e2e.vowfund.test`;
+  const guestEmail = `guest-${id}@e2e.shaadifund.test`;
   await guest.goto(`/wedding/${slug}`);
   await guest.getByRole("link", { name: "Contribute to A week in the Swiss Alps" }).click();
   await expect(guest.getByText("Demo mode.").first()).toBeVisible();
@@ -272,7 +272,7 @@ test("a couple signs in, completes onboarding, publishes, and a guest sees the p
   await guest.getByRole("link", { name: "Contribute to A week in the Swiss Alps" }).click();
   await fillGift(guest, {
     name: "Secret Santa",
-    email: `santa-${id}@e2e.vowfund.test`,
+    email: `santa-${id}@e2e.shaadifund.test`,
     message: "For your eyes only.",
     anonymous: true,
     privateMessage: true,

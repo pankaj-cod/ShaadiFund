@@ -300,8 +300,8 @@ export function CheckoutForm({ slug, dreamId, dreamTitle, coupleNames, demo }: C
         <p className="text-muted-foreground mt-4 text-sm">
           The full gift amount goes towards the couple&rsquo;s dream; the fee is added on top. Gifts
           are final once paid. If a payment fails or is taken twice, write to{" "}
-          <a className="underline underline-offset-4" href="mailto:support@vowfund.in">
-            support@vowfund.in
+          <a className="underline underline-offset-4" href="mailto:support@shaadifund.in">
+            support@shaadifund.in
           </a>{" "}
           and we will put it right.
         </p>
@@ -316,8 +316,8 @@ export function CheckoutForm({ slug, dreamId, dreamTitle, coupleNames, demo }: C
             {...register("consent")}
           />
           <span>
-            I agree that VowFund may use my name, email and message to process this gift and share
-            them with {coupleNames}.
+            I agree that ShaadiFund may use my name, email and message to process this gift and
+            share them with {coupleNames}.
           </span>
         </label>
         {errors.consent ? (

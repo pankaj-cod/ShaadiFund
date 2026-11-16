@@ -370,7 +370,7 @@ export function publishBlockers(input: {
 export async function publishWedding(actor: Actor): Promise<{ slug: string }> {
   const { couple, wedding } = await requireOwnWedding(actor);
   if (wedding.status === "SUSPENDED") {
-    throw new ConflictError("This page has been paused by VowFund. Please contact support.");
+    throw new ConflictError("This page has been paused by ShaadiFund. Please contact support.");
   }
   const dreams = await listDreams(wedding.id);
   const blockers = publishBlockers({

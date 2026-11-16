@@ -15,7 +15,7 @@ async function SignIn() {
 
 export default function SignInPage() {
   return (
-    <AppShell>
+    <AppShell glow>
       <p className="eyebrow">Welcome</p>
       <h1 className="text-h1 mt-4">Create your wedding wishlist</h1>
       <p className="text-muted-foreground mt-3 mb-8">

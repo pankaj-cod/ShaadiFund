@@ -1,4 +1,4 @@
-# VowFund project status
+# ShaadiFund project status
 
 _Last updated: 2026-11-16_
 
@@ -41,6 +41,13 @@ _Last updated: 2026-11-16_
   - Admin console at `/admin`: overview metrics (couples, published weddings, guests, contributions, volume, fees, checkout conversion, payment success rate, popular categories) with a demo/live filter; couples with suspend and restore; payments with full status history, webhook events and refunds; a refund button that needs a written reason; webhook event log; audit log.
   - Admin role is checked against the database inside every admin function. Non-admins see "not found". The role is granted only by `npm run admin:promote`.
 
+- **Visual redesign (warm and cinematic), using free Aceternity UI components restyled to the ivory, charcoal and gold palette:**
+  - Components adopted: resizable navbar, aurora background, flip words, text generate effect, timeline, wobble cards, bento grid, infinite moving cards, and a tilt card based on their 3D card. Three were rewritten to meet this project's strict type and lint rules; an external logo image and a missing texture file were removed.
+  - New landing page: hero with rotating dreams, how it works, couple and guest use cases, example wishlist, clearly labelled sample testimonials, fee explanation, common questions, closing call to action, footer.
+  - Demo wedding at `/demo` with invented content and no contribute buttons.
+  - Draft legal pages at `/legal/privacy`, `/legal/terms`, `/legal/refunds`, `/legal/fees` and `/legal/contact`, each marked as an unreviewed draft.
+  - Wedding page: reveal animations, tilting dream cards, category artwork where a dream has no photo. Gift page: word-by-word thank-you heading. Sign-in and onboarding: soft glow and page-rise animation. Buttons: gentle lift on hover.
+
 ## Verified on 2026-11-16
 
 | Check                                                       | Result                                                                                   |
@@ -76,7 +83,7 @@ _Last updated: 2026-11-16_
 
 | Topic           | Assumption                                                                                                                                                           |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name            | VowFund (the folder is named ShaadiFund)                                                                                                                             |
+| Name            | ShaadiFund (renamed from the working name VowFund on 2026-11-16)                                                                                                     |
 | Fee model       | Guest pays a transparent fee on top of the gift; nothing is deducted from the gift. **2.5% is now shown at checkout** but is still a placeholder awaiting a decision |
 | Overfunding     | Allowed; the progress bar caps at 100%                                                                                                                               |
 | Anonymous gifts | Hidden from other guests, visible to the couple                                                                                                                      |
@@ -96,6 +103,15 @@ _Last updated: 2026-11-16_
 - Prisma's driver logs a deprecation warning ("client.query() when the client is already executing a query") during transactions. It comes from inside Prisma 7's Postgres adapter, not from application code, and will need a Prisma upgrade before `pg` 9.
 
 ## Technical debt and risks
+
+- **The local database, its user and its Docker volume are still called `vowfund`.** These are internal names nobody sees; renaming them would wipe local data, so they were left. Production will use its own names.
+- **`shaadifund.in` is assumed as the domain** for the support address and example links. Confirm the real domain before launch.
+
+- **No photography.** The redesign uses drawn category artwork; real photos (the couple's own, and licensed images for the landing page) would lift it far more than any effect.
+- **Dashboard, gifts page, settings and admin console keep their earlier layout**; they inherit the new buttons, header and animation but were not redesigned.
+- **The legal pages are my plain-language drafts**, not lawyer-reviewed policies, and `support@shaadifund.in` appears throughout but may not exist yet.
+- The landing page states the 2.5% guest fee, which is still an undecided placeholder.
+- Aceternity's paid "all-access" blocks were not used.
 
 - **Admin and gifts screens were checked by automated browser tests, not reviewed by eye.**
 - **A failed webhook event cannot be reprocessed from the admin console.** The provider's own retries and the reconciliation job cover it.

@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { deleteDreamAction, reorderDreamsAction } from "@/app/(couple)/actions";
+import { DreamArt } from "@/components/dream/dream-art";
 import { DreamForm } from "@/components/dream/dream-form";
 import { FormMessage } from "@/components/forms/field";
 import { Button } from "@/components/ui/button";
@@ -108,7 +109,9 @@ export function DreamsManager({ dreams }: { dreams: DreamDTO[] }) {
                     sizes="144px"
                     className="object-cover"
                   />
-                ) : null}
+                ) : (
+                  <DreamArt category={dream.category} />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

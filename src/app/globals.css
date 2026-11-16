@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 /*
- * VowFund design tokens.
+ * ShaadiFund design tokens.
  * Semantic tokens (background, primary, accent...) are what components use.
  * The platform itself uses the default set on :root. A wedding page switches the
  * whole set by putting data-theme on its wrapper; see src/components/themes.
@@ -65,12 +65,19 @@
   --shadow-soft: 0 1px 2px rgb(60 45 20 / 0.04), 0 8px 24px -8px rgb(60 45 20 / 0.1);
   --shadow-lift: 0 2px 4px rgb(60 45 20 / 0.05), 0 20px 40px -16px rgb(60 45 20 / 0.18);
 
+  /* Motion (used by the Aceternity-derived components and page reveals) */
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards)
+    linear infinite;
+  --animate-aurora: aurora 60s linear infinite;
+  --animate-rise: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --shadow-input: 0 2px 3px -1px rgb(60 45 20 / 0.08), 0 1px 0 0 rgb(60 45 20 / 0.03);
+
   /* Layout */
   --container-prose: 40rem;
   --container-page: 72rem;
 }
 
-/* Default: the VowFund brand, and the "Minimal Ivory" wedding theme. */
+/* Default: the ShaadiFund brand, and the "Minimal Ivory" wedding theme. */
 :root,
 [data-theme="minimal-ivory"] {
   --radius: 0.75rem;
@@ -212,5 +219,36 @@
     height: 1px;
     background: currentColor;
     opacity: 0.5;
+  }
+}
+
+@keyframes scroll {
+  to {
+    transform: translate(calc(-50% - 0.5rem));
+  }
+}
+
+@keyframes aurora {
+  from {
+    background-position:
+      50% 50%,
+      50% 50%;
+  }
+  to {
+    background-position:
+      350% 50%,
+      350% 50%;
+  }
+}
+
+/* Content rises gently into place. Stagger with style="animation-delay: …". */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -1,4 +1,4 @@
-# VowFund
+# ShaadiFund
 
 _Give them memories, not things._
 

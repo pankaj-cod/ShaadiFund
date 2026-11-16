@@ -23,7 +23,7 @@ import {
 import { createTestDb, deleteTestUsers, hasDatabase } from "../support/db";
 
 const run = crypto.randomUUID().slice(0, 8);
-const EMAIL_SUFFIX = `@it-${run}.vowfund.test`;
+const EMAIL_SUFFIX = `@it-${run}.shaadifund.test`;
 // Names unique to this run so generated addresses never collide with other data.
 const A = `Asha${run}`;
 const B = `Bharat${run}`;

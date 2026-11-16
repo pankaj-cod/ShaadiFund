@@ -29,7 +29,7 @@ import {
 import { createTestDb, deleteTestUsers, hasDatabase } from "../support/db";
 
 const run = crypto.randomUUID().slice(0, 8);
-const EMAIL_SUFFIX = `@pay-${run}.vowfund.test`;
+const EMAIL_SUFFIX = `@pay-${run}.shaadifund.test`;
 const FEE_BPS = 250;
 
 describe.skipIf(!hasDatabase)("guest contributions and payments", () => {
@@ -424,10 +424,19 @@ describe.skipIf(!hasDatabase)("guest contributions and payments", () => {
       ]);
       expect(JSON.stringify(queued[0]!.payload)).toContain("₹5,000");
 
-      await dispatchNotifications(200);
-      const after = await db.notification.findMany({
-        where: { dedupeKey: { contains: session.contributionId } },
-      });
+      // Another sender on the same database (a developer's running server) may pick
+      // these up first, so wait for them to be sent rather than assuming we sent them.
+      const ours = { dedupeKey: { contains: session.contributionId } };
+      await expect
+        .poll(
+          async () => {
+            await dispatchNotifications(200);
+            return db.notification.count({ where: { ...ours, status: "SENT" } });
+          },
+          { timeout: 15_000, interval: 500 },
+        )
+        .toBe(2);
+      const after = await db.notification.findMany({ where: ours });
       expect(after.every((n) => n.status === "SENT" && n.sentAt !== null)).toBe(true);
       // A message whose sender died mid-send is picked up again once its hold expires.
       const stuck = after[0]!;

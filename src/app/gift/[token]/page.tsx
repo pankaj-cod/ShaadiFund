@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { DemoNotice } from "@/components/checkout/demo-notice";
 import { ThemeScope } from "@/components/themes/theme-scope";
 import { Button } from "@/components/ui/button";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { formatPaise } from "@/lib/money";
 import { getGiftView } from "@/modules/contribution/contribution.service";
 import type { GiftView } from "@/modules/contribution/contribution.types";
@@ -22,7 +23,9 @@ function Confirmed({ gift }: { gift: GiftView }) {
   return (
     <article className="text-center">
       <p className="eyebrow">Gift confirmed</p>
-      <h1 className="text-display mt-5 italic">Thank you, {gift.guestName}</h1>
+      <h1 className="text-display mt-5 italic">
+        <TextGenerateEffect words={`Thank you, ${gift.guestName}`} />
+      </h1>
       <div className="ornament-rule mx-auto mt-8 w-40" aria-hidden="true">
         <span className="bg-gold size-1.5 rotate-45" />
       </div>
@@ -81,7 +84,7 @@ function NotCompleted({ gift }: { gift: GiftView }) {
       </h1>
       <p className="text-muted-foreground mx-auto mt-4 max-w-md">
         {failed
-          ? "Nothing has been added to the couple's wishlist. If money left your account it is normally returned by your bank within a few working days; write to support@vowfund.in if it is not."
+          ? "Nothing has been added to the couple's wishlist. If money left your account it is normally returned by your bank within a few working days; write to support@shaadifund.in if it is not."
           : "No payment was made. You can start again whenever you like."}
       </p>
       <Button asChild size="lg" className="mt-8">

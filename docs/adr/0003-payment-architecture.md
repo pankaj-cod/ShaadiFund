@@ -6,7 +6,7 @@
 
 The founder's short-term goal is a working, deployable product. A registered entity (LLP or company with GST) comes later. Without an entity and Razorpay's approval of a marketplace settlement model, the platform has no lawful way to route guest money to couples.
 
-VowFund must never collect, pool, hold or distribute funds itself. Doing so is payment aggregation, which requires RBI authorisation.
+ShaadiFund must never collect, pool, hold or distribute funds itself. Doing so is payment aggregation, which requires RBI authorisation.
 
 ## Decision
 

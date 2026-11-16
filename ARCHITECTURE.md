@@ -1,8 +1,8 @@
-# VowFund Architecture
+# ShaadiFund Architecture
 
 _Give them memories, not things._
 
-VowFund is a wedding gifting platform for Indian couples. A couple publishes a page of dreams; guests contribute towards them with a personal message. This document describes how the system is built. Decisions with trade-offs are recorded in [docs/adr](docs/adr).
+ShaadiFund is a wedding gifting platform for Indian couples. A couple publishes a page of dreams; guests contribute towards them with a personal message. This document describes how the system is built. Decisions with trade-offs are recorded in [docs/adr](docs/adr).
 
 ## 1. Guiding constraints
 
@@ -145,7 +145,7 @@ erDiagram
 ```mermaid
 sequenceDiagram
   participant G as Guest
-  participant A as VowFund server
+  participant A as ShaadiFund server
   participant P as Payment provider
   G->>A: POST /contributions (dream, amount, details, idempotency key)
   A->>A: validate, compute fee, insert Contribution PENDING

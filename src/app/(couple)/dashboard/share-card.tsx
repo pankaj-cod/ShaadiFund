@@ -12,7 +12,10 @@ const STATUS_COPY: Record<WeddingDTO["status"], { label: string; detail: string 
   DRAFT: { label: "Draft", detail: "Only you can see your page." },
   PUBLISHED: { label: "Live", detail: "Anyone with the link can see your page." },
   UNPUBLISHED: { label: "Hidden", detail: "Your page is hidden from guests." },
-  SUSPENDED: { label: "Paused", detail: "VowFund has paused this page. Please contact support." },
+  SUSPENDED: {
+    label: "Paused",
+    detail: "ShaadiFund has paused this page. Please contact support.",
+  },
 };
 
 export function ShareCard({ wedding, appUrl }: { wedding: WeddingDTO; appUrl: string }) {

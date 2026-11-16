@@ -13,7 +13,7 @@ describe.skipIf(!hasDatabase)("leftover test data", () => {
   it("removes accounts from interrupted runs older than ten minutes", async () => {
     const stale = await db.user.findMany({
       where: {
-        email: { endsWith: ".vowfund.test" },
+        email: { endsWith: ".shaadifund.test" },
         createdAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
       },
       select: { email: true },
@@ -21,14 +21,14 @@ describe.skipIf(!hasDatabase)("leftover test data", () => {
     for (const { email } of stale) await deleteTestUsers(db, email);
     await db.notification.deleteMany({
       where: {
-        recipient: { endsWith: ".vowfund.test" },
+        recipient: { endsWith: ".shaadifund.test" },
         createdAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
       },
     });
     expect(
       await db.user.count({
         where: {
-          email: { endsWith: ".vowfund.test" },
+          email: { endsWith: ".shaadifund.test" },
           createdAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
         },
       }),

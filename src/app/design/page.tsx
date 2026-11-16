@@ -27,7 +27,7 @@ export default function DesignSystemPage() {
     <main className="flex-1">
       <header className="max-w-page mx-auto px-6 pt-16 pb-10">
         <p className="eyebrow">Internal reference</p>
-        <h1 className="text-h1 mt-4">VowFund design system</h1>
+        <h1 className="text-h1 mt-4">ShaadiFund design system</h1>
         <p className="text-lead text-muted-foreground mt-4 max-w-prose">
           The same components shown in each of the three wedding themes. Sample content only.
         </p>

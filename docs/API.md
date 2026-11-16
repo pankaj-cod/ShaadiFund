@@ -1,4 +1,4 @@
-# VowFund API contracts
+# ShaadiFund API contracts
 
 Phase 1 contract. Request and response bodies are defined precisely by the Zod schemas in each module once built; this file is the agreed surface.
 

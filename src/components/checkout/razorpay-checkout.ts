@@ -78,7 +78,7 @@ export async function openRazorpayCheckout(input: {
       order_id: input.orderId,
       amount: input.amountPaise,
       currency: "INR",
-      name: "VowFund",
+      name: "ShaadiFund",
       description: input.description,
       prefill: { name: input.guestName, email: input.guestEmail },
       theme: { color: "#2b2926" },

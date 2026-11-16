@@ -20,7 +20,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
       <header className="border-b">
         <div className="max-w-page mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-3">
           <Link href="/admin" className="font-heading text-xl font-medium italic">
-            VowFund <span className="text-muted-foreground text-sm not-italic">admin</span>
+            ShaadiFund <span className="text-muted-foreground text-sm not-italic">admin</span>
           </Link>
           <nav aria-label="Admin" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
             {LINKS.map(([href, label]) => (

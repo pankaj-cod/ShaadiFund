@@ -18,6 +18,7 @@ const RESERVED_SLUGS = new Set([
   "sign-up",
   "support",
   "terms",
+  "shaadifund",
   "vowfund",
   "wedding",
 ]);

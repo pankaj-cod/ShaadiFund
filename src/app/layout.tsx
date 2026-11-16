@@ -19,8 +19,8 @@ const body = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "VowFund: Give them memories, not things",
-    template: "%s | VowFund",
+    default: "ShaadiFund: Give them memories, not things",
+    template: "%s | ShaadiFund",
   },
   description:
     "A wedding gifting experience for Indian couples. Guests contribute towards the dreams a couple wants to live, with a personal message.",

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export function NotFoundMessage({
   title = "This page could not be found.",
   detail,
-  homeLabel = "Go to VowFund",
+  homeLabel = "Go to ShaadiFund",
 }: {
   title?: string;
   detail?: string;
@@ -21,7 +21,7 @@ export function NotFoundMessage({
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-24 text-center">
       <div className="max-w-prose">
-        <p className="eyebrow">VowFund</p>
+        <p className="eyebrow">ShaadiFund</p>
         <h1 className="text-h1 mt-5">{title}</h1>
         {detail ? <p className="text-muted-foreground mt-4">{detail}</p> : null}
         <Button asChild size="lg" variant="outline" className="mt-8">

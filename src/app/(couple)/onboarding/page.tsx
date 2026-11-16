@@ -19,7 +19,7 @@ async function Onboarding() {
 
 export default function OnboardingPage() {
   return (
-    <AppShell actions={<SignOutButton />}>
+    <AppShell actions={<SignOutButton />} glow>
       <Suspense fallback={<PageSkeleton />}>
         <Onboarding />
       </Suspense>

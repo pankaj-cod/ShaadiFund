@@ -1,5 +1,5 @@
 /**
- * The seam between VowFund and any payment provider (ADR 0003). Everything the
+ * The seam between ShaadiFund and any payment provider (ADR 0003). Everything the
  * rest of the app knows about a provider goes through this interface.
  */
 export type ProviderName = "MOCK" | "RAZORPAY";

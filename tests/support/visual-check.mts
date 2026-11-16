@@ -6,7 +6,7 @@ import { chromium, devices } from "@playwright/test";
 
 const [baseURL = "http://localhost:3000", out = "."] = process.argv.slice(2);
 const id = Date.now().toString(36);
-const email = `visual-${id}@e2e.vowfund.test`;
+const email = `visual-${id}@e2e.shaadifund.test`;
 const outbox = path.join(process.cwd(), ".data", "outbox");
 
 async function link(): Promise<string> {
@@ -84,11 +84,11 @@ await page
   .click();
 await page.getByRole("button", { name: "₹5,100", exact: true }).click();
 await page.getByRole("textbox", { name: "Your name" }).fill("Ananya Rao");
-await page.getByRole("textbox", { name: "Email address" }).fill(`guest-${id}@e2e.vowfund.test`);
+await page.getByRole("textbox", { name: "Email address" }).fill(`guest-${id}@e2e.shaadifund.test`);
 await page
   .getByRole("textbox", { name: "Your message (optional)" })
   .fill("Wishing you both a lifetime of adventures.");
-await page.getByRole("checkbox", { name: /I agree that VowFund/ }).check();
+await page.getByRole("checkbox", { name: /I agree that ShaadiFund/ }).check();
 await shot("9-checkout");
 await page.getByRole("button", { name: /Continue to pay/ }).click();
 await page.getByRole("heading", { name: "This is not a real payment" }).waitFor();

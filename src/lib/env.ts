@@ -27,7 +27,7 @@ const envSchema = z
 
     // Email: "file" writes messages to .data/outbox (development and tests only).
     EMAIL_TRANSPORT: z.enum(["file", "resend"]).default("file"),
-    EMAIL_FROM: z.string().min(3).default("VowFund <hello@vowfund.test>"),
+    EMAIL_FROM: z.string().min(3).default("ShaadiFund <hello@shaadifund.test>"),
     RESEND_API_KEY: optionalString,
 
     // Shared secret that scheduled jobs send as a bearer token to /api/internal/cron/*.

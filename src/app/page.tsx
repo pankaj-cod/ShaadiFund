@@ -1,27 +1,28 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Audiences } from "@/components/landing/audiences";
+import { ClosingCta } from "@/components/landing/closing-cta";
+import { ExampleWishlist } from "@/components/landing/example-wishlist";
+import { FeesAndFaq } from "@/components/landing/fees-and-faq";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { SiteNav } from "@/components/landing/site-nav";
+import { Testimonials } from "@/components/landing/testimonials";
+import { getEnv, isDemoPayments } from "@/lib/env";
 
-/**
- * Holding page for the foundation phase. The full landing page replaces this in
- * the frontend phase; its one call to action leads to the working sign-in.
- */
 export default function HomePage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-24">
-      <div className="max-w-prose text-center">
-        <p className="eyebrow">VowFund</p>
-        <h1 className="text-display mt-6 italic">Give them memories, not things.</h1>
-        <div className="ornament-rule mx-auto mt-10 max-w-48" aria-hidden="true">
-          <span className="bg-gold size-1.5 rotate-45" />
-        </div>
-        <p className="text-lead text-muted-foreground mt-10">
-          A wedding gifting experience for Indian couples, where guests help bring a couple&rsquo;s
-          dreams to life. We are building it now.
-        </p>
-        <Button asChild size="lg" className="mt-10">
-          <Link href="/sign-in">Create your wedding wishlist</Link>
-        </Button>
-      </div>
-    </main>
+    <>
+      <SiteNav />
+      <main className="flex-1">
+        <Hero />
+        <HowItWorks />
+        <Audiences />
+        <ExampleWishlist />
+        <Testimonials />
+        <FeesAndFaq demo={isDemoPayments(getEnv())} />
+        <ClosingCta />
+      </main>
+      <SiteFooter />
+    </>
   );
 }

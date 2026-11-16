@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { Client } from "pg";
 
-const E2E_EMAIL_PATTERN = "%@e2e.vowfund.test";
+const E2E_EMAIL_PATTERN = "%@e2e.shaadifund.test";
 
 /**
  * Removes the accounts the browser tests created, so the development database

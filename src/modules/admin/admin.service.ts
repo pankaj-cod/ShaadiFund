@@ -26,7 +26,7 @@ const PAGE_SIZE = 25;
  */
 export async function assertAdmin(actor: Actor): Promise<void> {
   if ((await findUserRole(actor.userId)) !== "ADMIN") {
-    throw new ForbiddenError("This area is for VowFund staff.");
+    throw new ForbiddenError("This area is for ShaadiFund staff.");
   }
 }
 

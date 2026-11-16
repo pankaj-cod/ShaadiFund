@@ -17,7 +17,7 @@ import { getPublicWedding, publishWedding, saveNames } from "@/modules/wedding/w
 import { createTestDb, deleteTestUsers, hasDatabase } from "../support/db";
 
 const run = crypto.randomUUID().slice(0, 8);
-const EMAIL_SUFFIX = `@ga-${run}.vowfund.test`;
+const EMAIL_SUFFIX = `@ga-${run}.shaadifund.test`;
 
 describe.skipIf(!hasDatabase)("couple gifts, admin console and analytics", () => {
   const db = createTestDb();

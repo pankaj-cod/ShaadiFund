@@ -56,7 +56,7 @@ export default function MockCheckoutPage({ params }: Props) {
       <p className="eyebrow">Demo payment</p>
       <h1 className="text-h1 mt-4">This is not a real payment</h1>
       <p className="text-muted-foreground mt-3 mb-8">
-        VowFund is running in demo mode. No money will move and no payment details are collected.
+        ShaadiFund is running in demo mode. No money will move and no payment details are collected.
         Choose an outcome to see what the guest would experience.
       </p>
       <Suspense fallback={<PageSkeleton />}>
