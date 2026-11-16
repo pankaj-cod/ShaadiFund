@@ -2,9 +2,11 @@ import "server-only";
 import { createHmac } from "node:crypto";
 import { getEnv } from "@/lib/env";
 import { MockProvider } from "./mock";
+import { RazorpayProvider } from "./razorpay";
 import type { PaymentProvider } from "./types";
 
 let mock: MockProvider | undefined;
+let razorpay: RazorpayProvider | undefined;
 
 /** The mock provider, available only when PAYMENTS_MODE=mock. */
 export function getMockProvider(): MockProvider {
@@ -19,13 +21,23 @@ export function getMockProvider(): MockProvider {
   return mock;
 }
 
-/** The provider for the configured payment mode. */
+/**
+ * The provider for the configured payment mode. Environment validation has
+ * already guaranteed that test mode has test keys, and that live mode has live
+ * keys and explicit approval (src/lib/env.ts).
+ */
 export function getPaymentProvider(): PaymentProvider {
-  const mode = getEnv().PAYMENTS_MODE;
-  if (mode === "mock") return getMockProvider();
-  throw new Error(
-    `PAYMENTS_MODE=${mode} needs the Razorpay provider, which is not built yet. Use PAYMENTS_MODE=mock.`,
-  );
+  const env = getEnv();
+  if (env.PAYMENTS_MODE === "mock") return getMockProvider();
+  if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+    throw new Error("Razorpay keys are not configured");
+  }
+  razorpay ??= new RazorpayProvider({
+    keyId: env.RAZORPAY_KEY_ID,
+    keySecret: env.RAZORPAY_KEY_SECRET,
+    webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
+  });
+  return razorpay;
 }
 
 /** Stored on each payment so demo and real records can never be mixed up in reports. */

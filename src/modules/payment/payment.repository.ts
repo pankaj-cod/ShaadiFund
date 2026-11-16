@@ -11,6 +11,7 @@ const paymentSelect = {
   providerPaymentId: true,
   status: true,
   amountPaise: true,
+  refundedPaise: true,
   contribution: {
     select: {
       id: true,
@@ -84,6 +85,7 @@ export async function recordTransition(
     failureCode?: string | null;
     failureReason?: string | null;
     capturedAt?: Date;
+    refundedPaise?: number;
   },
 ): Promise<void> {
   await tx.payment.update({
@@ -91,6 +93,90 @@ export async function recordTransition(
     data: { status: data.toStatus, ...update },
   });
   await tx.paymentStatusTransition.create({ data });
+}
+
+// ───────────────────────── Refunds ─────────────────────────
+
+/** True if a refund for this payment is already under way or done. */
+export async function hasActiveRefund(paymentId: string, db: Db): Promise<boolean> {
+  const count = await db.refund.count({
+    where: { paymentId, status: { in: ["REQUESTED", "PROCESSED"] } },
+  });
+  return count > 0;
+}
+
+export async function createRefund(
+  data: {
+    paymentId: string;
+    provider: ProviderName;
+    amountPaise: number;
+    reason: string;
+    initiatedByUserId: string | null;
+  },
+  db: Db,
+) {
+  return db.refund.create({ data, select: { id: true } });
+}
+
+export async function finishRefund(
+  id: string,
+  data: { status: "PROCESSED" | "FAILED"; providerRefundId?: string },
+  db: Db = getDb(),
+): Promise<void> {
+  await db.refund.update({ where: { id }, data });
+}
+
+// ───────────────────────── Reconciliation ─────────────────────────
+
+/**
+ * Payments we never got a final answer for: started a while ago, not captured,
+ * and recent enough that the guest may still have paid.
+ */
+export async function findUnresolvedPayments(
+  window: { olderThan: Date; newerThan: Date },
+  limit: number,
+  db: Db = getDb(),
+) {
+  return db.payment.findMany({
+    where: {
+      status: { in: ["CREATED", "AUTHORIZED", "FAILED"] },
+      createdAt: { lt: window.olderThan, gt: window.newerThan },
+    },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+    select: paymentSelect,
+  });
+}
+
+/**
+ * Dreams whose stored totals differ from the sum of their captured gifts
+ * (ADR 0004). This should always be empty; any row is a bug to investigate.
+ */
+export async function findFundingMismatches(db: Db = getDb()) {
+  return db.$queryRaw<
+    {
+      dreamId: string;
+      storedPaise: number;
+      actualPaise: number;
+      storedCount: number;
+      actualCount: number;
+    }[]
+  >`
+    SELECT d."id" AS "dreamId",
+           d."fundedPaise" AS "storedPaise",
+           COALESCE(SUM(c."amountPaise"), 0)::int AS "actualPaise",
+           d."contributionCount" AS "storedCount",
+           COUNT(c."id")::int AS "actualCount"
+    FROM "Dream" d
+    LEFT JOIN "Contribution" c
+      ON c."dreamId" = d."id"
+     AND EXISTS (
+       SELECT 1 FROM "Payment" p
+       WHERE p."contributionId" = c."id" AND p."status" IN ('CAPTURED', 'PARTIALLY_REFUNDED')
+     )
+    GROUP BY d."id"
+    HAVING d."fundedPaise" <> COALESCE(SUM(c."amountPaise"), 0)
+        OR d."contributionCount" <> COUNT(c."id")`;
 }
 
 // ───────────────────────── Webhook events ─────────────────────────

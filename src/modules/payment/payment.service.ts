@@ -2,27 +2,34 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { inTransaction } from "@/lib/db";
 import { getEnv, isDemoPayments } from "@/lib/env";
-import { NotFoundError, PaymentError } from "@/lib/errors";
+import { ConflictError, NotFoundError, PaymentError } from "@/lib/errors";
 import { coupleNames } from "@/lib/format";
 import { logger } from "@/lib/logger";
 import { formatPaise } from "@/lib/money";
+import { track } from "@/modules/analytics/analytics.service";
 import { recordAudit } from "@/modules/audit/audit.repository";
 import {
   findContributionDetail,
   setContributionStatus,
 } from "@/modules/contribution/contribution.repository";
 import { findCoupleEmails } from "@/modules/couple/couple.repository";
-import { addFunding } from "@/modules/dream/dream.repository";
+import { addFunding, removeFunding } from "@/modules/dream/dream.repository";
 import { enqueueNotification } from "@/modules/notification/notification.repository";
 import type { GiftEmailData } from "@/modules/notification/templates";
 import { canTransition } from "./payment-state";
 import {
+  createRefund,
+  findFundingMismatches,
   findPaymentByContributionId,
   findPaymentByOrder,
+  findUnresolvedPayments,
   finishEvent,
+  finishRefund,
+  hasActiveRefund,
   lockPayment,
   recordTransition,
   storeEvent,
+  type PaymentRecord,
 } from "./payment.repository";
 import { getPaymentProvider } from "./providers";
 import type { CheckoutCallback, ProviderPayment } from "./providers/types";
@@ -52,7 +59,7 @@ export async function applyCapture(input: {
   source: Source;
   eventId?: string;
 }): Promise<{ slug: string; applied: boolean }> {
-  return inTransaction(async (tx) => {
+  const result = await inTransaction(async (tx) => {
     const payment = await lockPayment(input.paymentId, tx);
     if (!payment) throw new NotFoundError("Payment not found.");
     const { contribution } = payment;
@@ -63,7 +70,7 @@ export async function applyCapture(input: {
       payment.status !== "AUTHORIZED" &&
       payment.status !== "FAILED"
     ) {
-      return { slug, applied: false };
+      return { slug, applied: false, where: null };
     }
     if (input.provider.amountPaise !== payment.amountPaise) {
       // Never credit a gift whose paid amount differs from what we asked for.
@@ -105,8 +112,14 @@ export async function applyCapture(input: {
       },
     });
     await queueGiftEmails(tx, contribution.id);
-    return { slug, applied: true };
+    return {
+      slug,
+      applied: true,
+      where: { weddingId: contribution.weddingId, dreamId: contribution.dreamId },
+    };
   });
+  if (result.where) await track("contribution_succeeded", result.where);
+  return { slug: result.slug, applied: result.applied };
 }
 
 async function queueGiftEmails(
@@ -152,10 +165,10 @@ export async function applyFailure(input: {
   source: Source;
   eventId?: string;
 }): Promise<{ applied: boolean }> {
-  return inTransaction(async (tx) => {
+  const result = await inTransaction(async (tx) => {
     const payment = await lockPayment(input.paymentId, tx);
     if (!payment) throw new NotFoundError("Payment not found.");
-    if (!canTransition(payment.status, "FAILED")) return { applied: false };
+    if (!canTransition(payment.status, "FAILED")) return { applied: false, where: null };
 
     await recordTransition(
       tx,
@@ -173,8 +186,13 @@ export async function applyFailure(input: {
       },
     );
     await setContributionStatus(payment.contribution.id, "FAILED", tx);
-    return { applied: true };
+    return {
+      applied: true,
+      where: { weddingId: payment.contribution.weddingId, dreamId: payment.contribution.dreamId },
+    };
   });
+  if (result.where) await track("payment_failed", result.where);
+  return { applied: result.applied };
 }
 
 // ───────────────────────── Browser callback ─────────────────────────
@@ -201,6 +219,7 @@ export async function verifyCheckout(
   }
   const provider = getPaymentProvider();
   if (
+    provider.name !== payment.provider ||
     callback.providerOrderId !== payment.providerOrderId ||
     !provider.verifyCheckoutSignature(callback)
   ) {
@@ -210,7 +229,11 @@ export async function verifyCheckout(
     );
   }
 
-  const truth = await provider.fetchPayment(callback.providerPaymentId);
+  let truth = await provider.fetchPayment(callback.providerPaymentId);
+  if (truth.status === "authorized" && truth.amountPaise === payment.amountPaise) {
+    // Orders ask for automatic capture; this covers an account configured otherwise.
+    truth = await provider.capturePayment(truth.providerPaymentId, payment.amountPaise);
+  }
   if (truth.status === "captured") {
     const { slug, applied } = await applyCapture({
       paymentId: payment.id,
@@ -240,9 +263,10 @@ export type WebhookResult =
 export async function handleProviderWebhook(
   rawBody: string,
   signature: string,
+  eventId?: string | null,
 ): Promise<WebhookResult> {
   const provider = getPaymentProvider();
-  const event = provider.parseWebhook(rawBody, signature);
+  const event = provider.parseWebhook(rawBody, signature, eventId);
 
   const stored = await storeEvent({
     provider: provider.name,
@@ -290,4 +314,155 @@ export async function handleProviderWebhook(
     });
     throw error;
   }
+}
+
+// ───────────────────────── Reconciliation ─────────────────────────
+
+const RECONCILE_AFTER_MS = 10 * 60 * 1000;
+const RECONCILE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** Asks the provider what really happened to one payment and applies it. */
+async function reconcileOne(payment: PaymentRecord): Promise<string | null> {
+  const provider = getPaymentProvider();
+  if (provider.name !== payment.provider) return null;
+
+  const attempts = await provider.listOrderPayments(payment.providerOrderId);
+  let paid = attempts.find((attempt) => attempt.status === "captured");
+  const authorised = attempts.find((attempt) => attempt.status === "authorized");
+  if (!paid && authorised && authorised.amountPaise === payment.amountPaise) {
+    paid = await provider.capturePayment(authorised.providerPaymentId, payment.amountPaise);
+  }
+  if (!paid || paid.status !== "captured") return null;
+
+  const { slug, applied } = await applyCapture({
+    paymentId: payment.id,
+    provider: paid,
+    source: "RECONCILIATION",
+  });
+  return applied ? slug : null;
+}
+
+/**
+ * Safety net for payments we never heard back about: the guest closed the tab
+ * before the callback, and the webhook was lost or not configured. Asks the
+ * provider directly, so a gift that was paid is always counted.
+ */
+export async function reconcileUnresolvedPayments(
+  now: Date = new Date(),
+  limit = 50,
+): Promise<{ checked: number; recovered: number; slugs: string[] }> {
+  const payments = await findUnresolvedPayments(
+    {
+      olderThan: new Date(now.getTime() - RECONCILE_AFTER_MS),
+      newerThan: new Date(now.getTime() - RECONCILE_WINDOW_MS),
+    },
+    limit,
+  );
+  const slugs: string[] = [];
+  for (const payment of payments) {
+    try {
+      const slug = await reconcileOne(payment);
+      if (slug) slugs.push(slug);
+    } catch (error) {
+      // One bad payment must not stop the rest; it is retried on the next run.
+      logger.error("Could not reconcile payment", { paymentId: payment.id, error });
+    }
+  }
+  return { checked: payments.length, recovered: slugs.length, slugs: [...new Set(slugs)] };
+}
+
+/** Compares every dream's stored totals with its captured gifts. Logs loudly on any difference. */
+export async function checkFundingTotals(): Promise<number> {
+  const mismatches = await findFundingMismatches();
+  for (const mismatch of mismatches) {
+    logger.error("Dream funding total does not match captured payments", { ...mismatch });
+  }
+  return mismatches.length;
+}
+
+// ───────────────────────── Refunds ─────────────────────────
+
+/**
+ * Returns a captured gift to the guest in full and takes it back out of the
+ * dream's totals. For duplicate or mistaken charges; called by support tooling.
+ *
+ * The refund is recorded as REQUESTED before the provider is called, so two
+ * people pressing "refund" at once cannot send the money back twice.
+ */
+export async function refundPayment(input: {
+  paymentId: string;
+  reason: string;
+  initiatedByUserId: string | null;
+}): Promise<{ slug: string }> {
+  const provider = getPaymentProvider();
+
+  const claimed = await inTransaction(async (tx) => {
+    const payment = await lockPayment(input.paymentId, tx);
+    if (!payment) throw new NotFoundError("Payment not found.");
+    if (payment.provider !== provider.name) {
+      throw new ConflictError("This payment was taken in a different payment mode.");
+    }
+    if (payment.status !== "CAPTURED" || !payment.providerPaymentId) {
+      throw new ConflictError("Only a captured payment can be refunded.");
+    }
+    if (await hasActiveRefund(payment.id, tx)) {
+      throw new ConflictError("A refund for this payment is already in progress.");
+    }
+    const refund = await createRefund(
+      {
+        paymentId: payment.id,
+        provider: payment.provider,
+        amountPaise: payment.amountPaise,
+        reason: input.reason,
+        initiatedByUserId: input.initiatedByUserId,
+      },
+      tx,
+    );
+    return { payment, refundId: refund.id, providerPaymentId: payment.providerPaymentId };
+  });
+
+  let providerRefundId: string;
+  try {
+    const result = await provider.refundPayment(
+      claimed.providerPaymentId,
+      claimed.payment.amountPaise,
+      claimed.refundId,
+    );
+    if (result.status === "failed") throw new Error("The provider declined the refund");
+    providerRefundId = result.providerRefundId;
+  } catch (error) {
+    await finishRefund(claimed.refundId, { status: "FAILED" });
+    logger.error("Refund failed at the provider", { paymentId: input.paymentId, error });
+    throw new PaymentError(
+      "The payment provider could not process this refund. Nothing has changed.",
+    );
+  }
+
+  return inTransaction(async (tx) => {
+    const payment = await lockPayment(input.paymentId, tx);
+    if (!payment) throw new NotFoundError("Payment not found.");
+    await recordTransition(
+      tx,
+      {
+        paymentId: payment.id,
+        fromStatus: payment.status,
+        toStatus: "REFUNDED",
+        source: "ADMIN",
+        note: input.reason,
+      },
+      { refundedPaise: payment.amountPaise },
+    );
+    await finishRefund(claimed.refundId, { status: "PROCESSED", providerRefundId }, tx);
+    await setContributionStatus(payment.contribution.id, "REFUNDED", tx);
+    await removeFunding(payment.contribution.dreamId, payment.contribution.amountPaise, tx);
+    await recordAudit(tx, {
+      actorUserId: input.initiatedByUserId,
+      actorType: input.initiatedByUserId ? "ADMIN" : "SYSTEM",
+      action: "payment.refunded",
+      entityType: "Payment",
+      entityId: payment.id,
+      metadata: { amountPaise: payment.amountPaise, reason: input.reason },
+    });
+    return { slug: payment.contribution.wedding.slug };
+  });
 }

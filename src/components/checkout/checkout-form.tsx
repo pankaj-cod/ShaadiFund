@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { DemoNotice } from "@/components/checkout/demo-notice";
+import { openRazorpayCheckout } from "@/components/checkout/razorpay-checkout";
 import { Field, fieldAria, FormMessage } from "@/components/forms/field";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -97,11 +98,60 @@ export function CheckoutForm({ slug, dreamId, dreamTitle, coupleNames, demo }: C
     }
 
     const session = json.data;
-    if (session.status === "PENDING" && session.payment.provider === "MOCK") {
-      router.push(`/checkout/mock/${session.acknowledgmentToken}`);
-    } else {
-      router.push(`/gift/${session.acknowledgmentToken}`);
+    const giftUrl = `/gift/${session.acknowledgmentToken}`;
+    if (session.status !== "PENDING" && session.status !== "FAILED") {
+      router.push(giftUrl);
+      return;
     }
+    if (session.payment.provider === "MOCK") {
+      router.push(`/checkout/mock/${session.acknowledgmentToken}`);
+      return;
+    }
+    if (!session.payment.publicKey) {
+      setFormError("Payments are not available right now. Nothing was charged.");
+      return;
+    }
+
+    let result;
+    try {
+      result = await openRazorpayCheckout({
+        key: session.payment.publicKey,
+        orderId: session.payment.orderId,
+        amountPaise: session.totalPaise,
+        description: `Gift for ${coupleNames}: ${dreamTitle}`.slice(0, 250),
+        guestName: values.guestName,
+        guestEmail: values.guestEmail,
+      });
+    } catch {
+      setFormError("We could not open the payment window. Nothing was charged. Please try again.");
+      return;
+    }
+    if (result.outcome === "closed") {
+      setFormError(
+        result.attempted
+          ? "That payment did not go through and your gift has not been counted. You can try again."
+          : "You closed the payment window before paying. Nothing was charged.",
+      );
+      return;
+    }
+
+    // Our server verifies the result with Razorpay; the browser's word alone is never enough.
+    // If this request is lost, the confirmation page keeps checking and the gift is still found.
+    try {
+      await fetch(`/api/contributions/${session.contributionId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: session.acknowledgmentToken,
+          providerOrderId: result.response.razorpay_order_id,
+          providerPaymentId: result.response.razorpay_payment_id,
+          signature: result.response.razorpay_signature,
+        }),
+      });
+    } catch {
+      // Fall through to the confirmation page, which polls for the outcome.
+    }
+    router.push(giftUrl);
   }
 
   return (

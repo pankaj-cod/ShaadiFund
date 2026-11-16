@@ -21,10 +21,15 @@ export async function deleteTestUsers(db: PrismaClient, emailSuffix: string): Pr
   const userIds = users.map((user) => user.id);
   const coupleIds = users.flatMap((user) => (user.membership ? [user.membership.coupleId] : []));
 
+  const weddingIds = (
+    await db.wedding.findMany({ where: { coupleId: { in: coupleIds } }, select: { id: true } })
+  ).map((wedding) => wedding.id);
+  await db.analyticsEvent.deleteMany({ where: { weddingId: { in: weddingIds } } });
   const inWeddings = { wedding: { coupleId: { in: coupleIds } } };
   const inPayments = { payment: { contribution: inWeddings } };
   await db.paymentStatusTransition.deleteMany({ where: inPayments });
   await db.paymentEvent.deleteMany({ where: inPayments });
+  await db.refund.deleteMany({ where: inPayments });
   await db.payment.deleteMany({ where: { contribution: inWeddings } });
   await db.guestMessage.deleteMany({ where: inWeddings });
   await db.contribution.deleteMany({ where: inWeddings });

@@ -7,6 +7,7 @@ import { coupleNames } from "@/lib/format";
 import { logger } from "@/lib/logger";
 import { calculateContributionTotals, rupeesToPaise } from "@/lib/money";
 import { assertWithinRateLimit } from "@/lib/rate-limit";
+import { track } from "@/modules/analytics/analytics.service";
 import { findContributableDream } from "@/modules/dream/dream.repository";
 import { createPayment, findPaymentByContributionId } from "@/modules/payment/payment.repository";
 import { currentPaymentMode, getPaymentProvider } from "@/modules/payment/providers";
@@ -61,6 +62,9 @@ export async function startContribution(
           ? { body: input.message, visibility: input.messageVisibility }
           : null,
       });
+      const where = { weddingId: dream.weddingId, dreamId: dream.id };
+      await track("checkout_initiated", where);
+      if (input.message) await track("guest_message_submitted", where);
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
       // A double submit raced us; use the row the other request created.
@@ -112,6 +116,7 @@ function toCheckoutSession(
   contribution: ContributionRecord,
   payment: { provider: "MOCK" | "RAZORPAY"; mode: "TEST" | "LIVE"; providerOrderId: string },
 ): CheckoutSession {
+  const provider = getPaymentProvider();
   return {
     contributionId: contribution.id,
     acknowledgmentToken: contribution.acknowledgmentToken,
@@ -119,7 +124,12 @@ function toCheckoutSession(
     amountPaise: contribution.amountPaise,
     platformFeePaise: contribution.platformFeePaise,
     totalPaise: contribution.totalPaise,
-    payment: { provider: payment.provider, mode: payment.mode, orderId: payment.providerOrderId },
+    payment: {
+      provider: payment.provider,
+      mode: payment.mode,
+      orderId: payment.providerOrderId,
+      publicKey: provider.name === payment.provider ? provider.publicKey : null,
+    },
   };
 }
 
@@ -147,7 +157,7 @@ export async function getGiftView(token: string): Promise<GiftView | null> {
     platformFeePaise: detail.platformFeePaise,
     totalPaise: detail.totalPaise,
     message: detail.message?.body ?? null,
-    coupleReply: detail.message?.coupleReply ?? null,
+    coupleReply: detail.thankYouNote,
     provider: detail.payment?.provider ?? null,
     demo: detail.payment ? detail.payment.mode === "TEST" : isDemoPayments(getEnv()),
   };

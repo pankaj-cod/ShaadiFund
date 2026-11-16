@@ -6,12 +6,19 @@ import {
   markNotificationFailed,
   markNotificationSent,
 } from "./notification.repository";
-import { giftReceiptEmail, giftReceivedEmail, type GiftEmailData } from "./templates";
+import {
+  giftReceiptEmail,
+  giftReceivedEmail,
+  thankYouEmail,
+  type GiftEmailData,
+  type ThankYouEmailData,
+} from "./templates";
 
 function render(type: string, payload: unknown) {
   const data = payload as GiftEmailData;
   if (type === "gift_receipt") return giftReceiptEmail(data);
   if (type === "gift_received") return giftReceivedEmail(data);
+  if (type === "thank_you") return thankYouEmail(payload as ThankYouEmailData);
   throw new Error(`Unknown notification type: ${type}`);
 }
 

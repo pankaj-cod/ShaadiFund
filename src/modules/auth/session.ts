@@ -1,8 +1,9 @@
 import "server-only";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { UnauthenticatedError } from "@/lib/errors";
 import { getAuth } from "./auth";
+import { findUserRole } from "./user.repository";
 
 /** The signed-in person performing an action. Passed to every service function. */
 export interface Actor {
@@ -28,5 +29,16 @@ export async function requireActorOrRedirect(): Promise<Actor> {
 export async function requireActor(): Promise<Actor> {
   const actor = await getActor();
   if (!actor) throw new UnauthenticatedError();
+  return actor;
+}
+
+/**
+ * For admin pages: anyone who is not signed in as staff gets the ordinary
+ * "not found" page, so the admin area's existence is not advertised. The admin
+ * services check the role again on every call.
+ */
+export async function requireAdminOrNotFound(): Promise<Actor> {
+  const actor = await getActor();
+  if (!actor || (await findUserRole(actor.userId)) !== "ADMIN") notFound();
   return actor;
 }

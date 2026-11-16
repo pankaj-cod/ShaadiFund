@@ -331,6 +331,9 @@ model Contribution {
   acknowledgmentToken  String             @unique
   consentAcceptedAt    DateTime
   confirmedAt          DateTime?
+  // The couple's personal thank-you to this guest, shown on the guest's private page.
+  thankYouNote         String?
+  thankedAt            DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 

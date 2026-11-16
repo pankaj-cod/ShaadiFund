@@ -7,6 +7,7 @@ import {
   type ProviderEvent,
   type ProviderOrder,
   type ProviderPayment,
+  type ProviderRefund,
 } from "./types";
 
 /**
@@ -15,8 +16,10 @@ import {
  * the ways that matter to our code: orders, signed checkout callbacks, signed
  * webhooks, and a payment lookup that is the source of truth.
  *
- * It keeps no state: a mock payment id encodes its own outcome and amount
+ * It needs no database: a mock payment id encodes its own outcome and amount
  * ("mockpay_captured_512500_<nonce>"), and signatures stop anyone forging one.
+ * Payments it has "taken" are also remembered in memory for this process, so
+ * reconciliation can be exercised in tests.
  */
 export type MockOutcome = "captured" | "failed";
 
@@ -48,6 +51,9 @@ export function parseMockPaymentId(providerPaymentId: string): ProviderPayment |
 
 export class MockProvider implements PaymentProvider {
   readonly name = "MOCK" as const;
+  readonly publicKey = null;
+
+  private readonly attempts = new Map<string, string[]>();
 
   constructor(private readonly secret: string) {}
 
@@ -60,7 +66,7 @@ export class MockProvider implements PaymentProvider {
     return safeEqual(expected, callback.signature);
   }
 
-  parseWebhook(rawBody: string, signature: string): ProviderEvent {
+  parseWebhook(rawBody: string, signature: string, _eventId?: string | null): ProviderEvent {
     if (!safeEqual(sign(this.secret, rawBody), signature)) throw new InvalidSignatureError();
     const body = JSON.parse(rawBody) as {
       id: string;
@@ -87,6 +93,26 @@ export class MockProvider implements PaymentProvider {
     return payment;
   }
 
+  /** Attempts made in this process. A restarted server remembers none, like a provider outage. */
+  async listOrderPayments(providerOrderId: string): Promise<ProviderPayment[]> {
+    return (this.attempts.get(providerOrderId) ?? []).flatMap((id) => parseMockPaymentId(id) ?? []);
+  }
+
+  async capturePayment(providerPaymentId: string, _amountPaise: number): Promise<ProviderPayment> {
+    return this.fetchPayment(providerPaymentId);
+  }
+
+  async refundPayment(
+    providerPaymentId: string,
+    amountPaise: number,
+    _reference: string,
+  ): Promise<ProviderRefund> {
+    const payment = await this.fetchPayment(providerPaymentId);
+    if (payment.status !== "captured")
+      throw new Error("Only captured mock payments can be refunded");
+    return { providerRefundId: `mockrfnd_${randomUUID()}`, status: "processed", amountPaise };
+  }
+
   // ── What the provider's own side would do. Used only by the demo checkout and tests. ──
 
   /** The provider "takes" a payment and returns what its checkout would hand the browser. */
@@ -96,6 +122,10 @@ export class MockProvider implements PaymentProvider {
     outcome: MockOutcome,
   ): CheckoutCallback {
     const providerPaymentId = `mockpay_${outcome}_${amountPaise}_${randomUUID()}`;
+    this.attempts.set(providerOrderId, [
+      ...(this.attempts.get(providerOrderId) ?? []),
+      providerPaymentId,
+    ]);
     return {
       providerOrderId,
       providerPaymentId,

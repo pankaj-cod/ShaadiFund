@@ -8,7 +8,13 @@ export interface CheckoutSession {
   amountPaise: number;
   platformFeePaise: number;
   totalPaise: number;
-  payment: { provider: "MOCK" | "RAZORPAY"; mode: "TEST" | "LIVE"; orderId: string };
+  payment: {
+    provider: "MOCK" | "RAZORPAY";
+    mode: "TEST" | "LIVE";
+    orderId: string;
+    /** The provider's publishable key for opening its checkout. Null for the mock. */
+    publicKey: string | null;
+  };
 }
 
 /** The guest's own view of their gift, reached with their private link. */

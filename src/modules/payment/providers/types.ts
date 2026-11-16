@@ -52,13 +52,34 @@ export class InvalidSignatureError extends Error {
   }
 }
 
+export interface ProviderRefund {
+  providerRefundId: string;
+  status: "processed" | "pending" | "failed";
+  amountPaise: number;
+}
+
 export interface PaymentProvider {
   readonly name: ProviderName;
+  /** The key the browser needs to open the provider's checkout, if it has one. Never a secret. */
+  readonly publicKey: string | null;
   createOrder(input: CreateOrderInput): Promise<ProviderOrder>;
   /** True only if the callback was signed by the provider for this exact order and payment. */
   verifyCheckoutSignature(callback: CheckoutCallback): boolean;
-  /** Verifies the signature against the raw body, then parses. Throws InvalidSignatureError. */
-  parseWebhook(rawBody: string, signature: string): ProviderEvent;
+  /**
+   * Verifies the signature against the raw body, then parses. Throws InvalidSignatureError.
+   * eventId is the provider's delivery id when it is sent outside the body.
+   */
+  parseWebhook(rawBody: string, signature: string, eventId?: string | null): ProviderEvent;
   /** The provider's own record of a payment: the source of truth for status and amount. */
   fetchPayment(providerPaymentId: string): Promise<ProviderPayment>;
+  /** Every payment attempt made against an order. Used to reconcile checkouts we never heard back from. */
+  listOrderPayments(providerOrderId: string): Promise<ProviderPayment[]>;
+  /** Captures an authorised payment. Returns the payment as the provider now reports it. */
+  capturePayment(providerPaymentId: string, amountPaise: number): Promise<ProviderPayment>;
+  /** Returns captured money to the guest. */
+  refundPayment(
+    providerPaymentId: string,
+    amountPaise: number,
+    reference: string,
+  ): Promise<ProviderRefund>;
 }

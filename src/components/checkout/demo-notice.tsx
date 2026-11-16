@@ -10,8 +10,7 @@ export function DemoNotice({ className }: { className?: string }) {
         className,
       )}
     >
-      <strong className="font-semibold">Demo mode.</strong> No real money moves and no card or UPI
-      details are collected.
+      <strong className="font-semibold">Demo mode.</strong> No real money moves.
     </p>
   );
 }

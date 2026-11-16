@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { NotFoundError, PaymentError } from "@/lib/errors";
+import { ConflictError, NotFoundError, PaymentError } from "@/lib/errors";
 import { fundingPercent } from "@/lib/money";
 import { resetRateLimits } from "@/lib/rate-limit";
 import type { Actor } from "@/modules/auth/session";
@@ -10,7 +10,13 @@ import {
 } from "@/modules/contribution/contribution.service";
 import { createDream } from "@/modules/dream/dream.service";
 import { dispatchNotifications } from "@/modules/notification/dispatch.service";
-import { handleProviderWebhook, verifyCheckout } from "@/modules/payment/payment.service";
+import {
+  checkFundingTotals,
+  handleProviderWebhook,
+  reconcileUnresolvedPayments,
+  refundPayment,
+  verifyCheckout,
+} from "@/modules/payment/payment.service";
 import { getMockProvider } from "@/modules/payment/providers";
 import { InvalidSignatureError } from "@/modules/payment/providers/types";
 import {
@@ -507,6 +513,179 @@ describe.skipIf(!hasDatabase)("guest contributions and payments", () => {
       });
       expect(await getGiftView("a".repeat(43))).toBeNull();
       expect(await getGiftView("../../etc/passwd")).toBeNull();
+    });
+  });
+
+  describe("reconciliation", () => {
+    const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000);
+    const backdate = (contributionId: string, minutes: number) =>
+      db.payment.update({ where: { contributionId }, data: { createdAt: minutesAgo(minutes) } });
+
+    it("recovers a gift that was paid but never reported back to us", async () => {
+      const before = await dream();
+      const session = await start(gift());
+      // The guest paid at the provider, then closed the tab: no callback, no webhook.
+      mock.simulatePayment(session.payment.orderId, session.totalPaise, "captured");
+      await backdate(session.contributionId, 20);
+
+      const result = await reconcileUnresolvedPayments();
+      expect(result.recovered).toBeGreaterThanOrEqual(1);
+      expect(result.slugs).toContain(slug);
+      expect((await getGiftView(session.acknowledgmentToken))!.status).toBe("CONFIRMED");
+      expect((await dream()).fundedPaise).toBe(before.fundedPaise + 500_000);
+
+      const transition = await db.paymentStatusTransition.findFirstOrThrow({
+        where: { payment: { contributionId: session.contributionId }, toStatus: "CAPTURED" },
+      });
+      expect(transition.source).toBe("RECONCILIATION");
+
+      // Running it again changes nothing.
+      await reconcileUnresolvedPayments();
+      expect((await dream()).fundedPaise).toBe(before.fundedPaise + 500_000);
+    });
+
+    it("recovers a success that followed a failed attempt on the same order", async () => {
+      const session = await start(gift());
+      await pay(session, "failed");
+      mock.simulatePayment(session.payment.orderId, session.totalPaise, "captured");
+      await backdate(session.contributionId, 20);
+      await reconcileUnresolvedPayments();
+      expect((await getGiftView(session.acknowledgmentToken))!.status).toBe("CONFIRMED");
+    });
+
+    it("leaves alone checkouts that are unpaid, only failed, or still fresh", async () => {
+      const before = await dream();
+      const unpaid = await start(gift());
+      await backdate(unpaid.contributionId, 20);
+      const onlyFailed = await start(gift());
+      mock.simulatePayment(onlyFailed.payment.orderId, onlyFailed.totalPaise, "failed");
+      await backdate(onlyFailed.contributionId, 20);
+      const fresh = await start(gift());
+      mock.simulatePayment(fresh.payment.orderId, fresh.totalPaise, "captured");
+
+      await reconcileUnresolvedPayments();
+      expect((await getGiftView(unpaid.acknowledgmentToken))!.status).toBe("PENDING");
+      expect((await getGiftView(onlyFailed.acknowledgmentToken))!.status).toBe("PENDING");
+      expect((await getGiftView(fresh.acknowledgmentToken))!.status).toBe("PENDING");
+      expect((await dream()).fundedPaise).toBe(before.fundedPaise);
+      // Tidy up so the fresh one does not surprise later tests.
+      await pay(fresh);
+    });
+
+    it("does not credit a recovered payment whose amount is wrong", async () => {
+      const before = await dream();
+      const session = await start(gift());
+      mock.simulatePayment(session.payment.orderId, 100, "captured");
+      await backdate(session.contributionId, 20);
+      await reconcileUnresolvedPayments();
+      expect((await getGiftView(session.acknowledgmentToken))!.status).toBe("PENDING");
+      expect((await dream()).fundedPaise).toBe(before.fundedPaise);
+      // Take it out of the reconciliation window so later runs skip it.
+      await backdate(session.contributionId, 60 * 24 * 5);
+    });
+
+    it("detects a dream whose stored total has drifted from its payments", async () => {
+      expect(await checkFundingTotals()).toBe(0);
+      await db.dream.update({ where: { id: dreamId }, data: { fundedPaise: { increment: 1 } } });
+      expect(await checkFundingTotals()).toBe(1);
+      await db.dream.update({ where: { id: dreamId }, data: { fundedPaise: { decrement: 1 } } });
+      expect(await checkFundingTotals()).toBe(0);
+    });
+  });
+
+  describe("refunds", () => {
+    const paymentIdOf = async (contributionId: string) =>
+      (await db.payment.findUniqueOrThrow({ where: { contributionId } })).id;
+
+    it("returns a gift in full and takes it back out of the dream", async () => {
+      const session = await start(gift());
+      await pay(session);
+      const funded = await dream();
+      const paymentId = await paymentIdOf(session.contributionId);
+
+      const result = await refundPayment({
+        paymentId,
+        reason: "Duplicate charge",
+        initiatedByUserId: null,
+      });
+      expect(result.slug).toBe(slug);
+      expect(await dream()).toMatchObject({
+        fundedPaise: funded.fundedPaise - 500_000,
+        contributionCount: funded.contributionCount - 1,
+      });
+      expect((await getGiftView(session.acknowledgmentToken))!.status).toBe("REFUNDED");
+      const payment = await db.payment.findUniqueOrThrow({ where: { id: paymentId } });
+      expect(payment).toMatchObject({ status: "REFUNDED", refundedPaise: 512_500 });
+      const refund = await db.refund.findFirstOrThrow({ where: { paymentId } });
+      expect(refund).toMatchObject({
+        status: "PROCESSED",
+        amountPaise: 512_500,
+        reason: "Duplicate charge",
+      });
+      expect(refund.providerRefundId).toMatch(/^mockrfnd_/);
+      // A refunded gift no longer appears among public gifts.
+      const audit = await db.auditLog.count({
+        where: { action: "payment.refunded", entityId: paymentId },
+      });
+      expect(audit).toBe(1);
+      expect(await checkFundingTotals()).toBe(0);
+    });
+
+    it("refunds once even when requested many times at once", async () => {
+      const session = await start(gift());
+      await pay(session);
+      const funded = await dream();
+      const paymentId = await paymentIdOf(session.contributionId);
+
+      const results = await Promise.allSettled(
+        Array.from({ length: 5 }, () =>
+          refundPayment({ paymentId, reason: "Mistake", initiatedByUserId: null }),
+        ),
+      );
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      for (const failure of results.filter((r) => r.status === "rejected")) {
+        expect((failure as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
+      }
+      expect((await dream()).fundedPaise).toBe(funded.fundedPaise - 500_000);
+      expect(await db.refund.count({ where: { paymentId, status: "PROCESSED" } })).toBe(1);
+      await expect(
+        refundPayment({ paymentId, reason: "Again", initiatedByUserId: null }),
+      ).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it("refuses to refund a payment that was never captured", async () => {
+      const session = await start(gift());
+      const paymentId = await paymentIdOf(session.contributionId);
+      await expect(
+        refundPayment({ paymentId, reason: "Nothing to refund", initiatedByUserId: null }),
+      ).rejects.toBeInstanceOf(ConflictError);
+      await expect(
+        refundPayment({
+          paymentId: crypto.randomUUID(),
+          reason: "Unknown",
+          initiatedByUserId: null,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("a late duplicate webhook cannot bring a refunded gift back", async () => {
+      const session = await start(gift());
+      const callback = mock.simulatePayment(
+        session.payment.orderId,
+        session.totalPaise,
+        "captured",
+      );
+      await verifyCheckout(session.contributionId, session.acknowledgmentToken, callback);
+      await refundPayment({
+        paymentId: await paymentIdOf(session.contributionId),
+        reason: "Mistake",
+        initiatedByUserId: null,
+      });
+      const funded = await dream();
+      const late = mock.buildWebhook(callback);
+      await handleProviderWebhook(late.rawBody, late.signature);
+      expect((await dream()).fundedPaise).toBe(funded.fundedPaise);
+      expect((await getGiftView(session.acknowledgmentToken))!.status).toBe("REFUNDED");
     });
   });
 

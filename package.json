@@ -19,7 +19,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
-    "check": "npm run lint && npm run typecheck && npm run format:check && npm run test"
+    "check": "npm run lint && npm run typecheck && npm run format:check && npm run test",
+    "admin:promote": "node scripts/promote-admin.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.6",

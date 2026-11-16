@@ -107,3 +107,30 @@ ${data.message ? `<blockquote style="margin:0 0 24px;padding:12px 16px;border-le
     ),
   };
 }
+
+export interface ThankYouEmailData {
+  coupleNames: string;
+  guestName: string;
+  dreamTitle: string;
+  note: string;
+  url: string;
+}
+
+/** To the guest: the couple's personal thank-you. */
+export function thankYouEmail(data: ThankYouEmailData): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  return {
+    subject: `A thank-you from ${data.coupleNames}`,
+    text: `Dear ${data.guestName},\n\n${data.note}\n\nWith love,\n${data.coupleNames}\n\nYour gift towards "${data.dreamTitle}": ${data.url}`,
+    html: layout(
+      `A note from ${data.coupleNames}`,
+      `<p style="line-height:1.6;margin:0 0 16px">Dear ${escapeHtml(data.guestName)},</p>
+<blockquote style="margin:0 0 24px;padding:12px 16px;border-left:3px solid #b3924f;font-family:Georgia,serif;font-style:italic;font-size:18px;line-height:1.6;white-space:pre-line">${escapeHtml(data.note)}</blockquote>
+<p style="line-height:1.6;margin:0 0 24px">With love,<br>${escapeHtml(data.coupleNames)}</p>
+<p style="margin:0"><a href="${escapeHtml(data.url)}" style="display:inline-block;background:#2b2926;color:#fbf8f2;text-decoration:none;padding:14px 24px;border-radius:10px">See your gift</a></p>`,
+    ),
+  };
+}

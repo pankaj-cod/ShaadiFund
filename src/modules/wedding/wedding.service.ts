@@ -1,6 +1,7 @@
 import "server-only";
 import { inTransaction, isUniqueViolation } from "@/lib/db";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { track } from "@/modules/analytics/analytics.service";
 import { recordAudit } from "@/modules/audit/audit.repository";
 import { listConfirmedContributions } from "@/modules/contribution/contribution.repository";
 import type { Actor } from "@/modules/auth/session";
@@ -250,6 +251,7 @@ export async function saveNames(
     }
     await advanceOnboarding(couple, ONBOARDING_STEPS.names, tx);
   });
+  if (!existing) await track("wedding_created");
   return { slug, replacedSlugs: existing && existing.slug !== slug ? [existing.slug] : [] };
 }
 
@@ -399,6 +401,8 @@ export async function publishWedding(actor: Actor): Promise<{ slug: string }> {
       entityId: wedding.id,
     });
   });
+  await track("wedding_published", { weddingId: wedding.id });
+  if (!couple.onboardingCompletedAt) await track("onboarding_completed", { weddingId: wedding.id });
   return { slug: wedding.slug };
 }
 

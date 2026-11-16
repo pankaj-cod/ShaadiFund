@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { TrackView } from "@/components/analytics/track-view";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { ThemeScope } from "@/components/themes/theme-scope";
 import { getEnv, isDemoPayments } from "@/lib/env";
@@ -25,6 +26,7 @@ async function Checkout({ params }: Props) {
 
   return (
     <ThemeScope theme={wedding.theme} className="flex min-h-svh flex-1 flex-col">
+      <TrackView name="dream_selected" slug={wedding.slug} dreamId={dream.id} />
       <main className="mx-auto w-full max-w-xl flex-1 px-6 py-10 sm:py-14">
         <Link
           href={`/wedding/${wedding.slug}`}

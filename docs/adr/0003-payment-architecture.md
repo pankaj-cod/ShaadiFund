@@ -1,6 +1,6 @@
 # ADR 0003: Payment architecture and money flow
 
-**Status:** Accepted (2026-11-15). The provider interface, mock provider, state machine, capture logic and webhook pipeline are implemented and tested; the Razorpay provider is not built yet. The live money flow is **not approved** and needs Razorpay's written confirmation and professional legal review.
+**Status:** Accepted (2026-11-15). Implemented: provider interface, mock and Razorpay providers, state machine, capture, webhooks, reconciliation and full refunds. A complete Razorpay test payment has not yet been confirmed end to end, and live mode remains blocked pending Razorpay's written approval and legal review.
 
 ## Context
 

@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { config } from "dotenv";
+import { Client } from "pg";
 import sharp from "sharp";
 
 const OUTBOX = path.join(process.cwd(), ".data", "outbox");
@@ -60,6 +62,18 @@ async function fillGift(
   await guest.getByRole("checkbox", { name: /I agree that VowFund/ }).check();
 }
 
+/** Grants the admin role the only way it can be granted: directly in the database. */
+async function promoteToAdmin(email: string): Promise<void> {
+  config({ path: [".env.local", ".env"], quiet: true });
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    await client.query(`UPDATE "User" SET "role" = 'ADMIN' WHERE "email" = $1`, [email]);
+  } finally {
+    await client.end();
+  }
+}
+
 async function signIn(page: Page, email: string): Promise<void> {
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
@@ -95,7 +109,7 @@ test("a couple signs in, completes onboarding, publishes, and a guest sees the p
   page,
   browser,
 }, testInfo) => {
-  test.setTimeout(150_000);
+  test.setTimeout(240_000);
   const id = `${testInfo.project.name}${Date.now().toString(36)}`;
   const email = `couple-${id}@e2e.vowfund.test`;
   const one = `Riya${id}`;
@@ -282,6 +296,68 @@ test("a couple signs in, completes onboarding, publishes, and a guest sees the p
   await page.reload();
   await expect(page.getByText("₹10,200 of ₹3,00,000")).toBeVisible();
   await expect(page.getByText("2 contributions")).toBeVisible();
+
+  // ── The couple reads and answers their gifts ──
+  await page.goto("/dashboard/gifts");
+  await expect(page.getByTestId("gifts-total")).toHaveText("₹10,200");
+  await expect(page.getByRole("heading", { name: "Secret Santa" })).toBeVisible();
+  await expect(page.getByText("For your eyes only.")).toBeVisible();
+  const ananya = page.getByRole("listitem").filter({ hasText: "Ananya Rao" });
+  await expect(ananya.getByText(guestEmail, { exact: false })).toBeVisible();
+
+  await ananya.getByRole("button", { name: "Say thank you" }).click();
+  await ananya.getByRole("button", { name: "Send thank-you" }).click();
+  await expect(ananya.getByText("Write a few words for your guest")).toBeVisible();
+  await ananya.getByRole("textbox").fill("Thank you, Ananya! See you at the wedding.");
+  await ananya.getByRole("button", { name: "Send thank-you" }).click();
+  await expect(ananya.getByText("Your thank-you", { exact: true })).toBeVisible();
+  await guest.goto(giftUrl);
+  await expect(guest.getByText("Thank you, Ananya! See you at the wedding.")).toBeVisible();
+  expect(await emailTextFor(guestEmail, "A thank-you from")).toContain("See you at the wedding");
+
+  // Hiding a message takes it off the public page straight away.
+  await ananya.getByRole("button", { name: "Hide message from page" }).click();
+  await expect(ananya.getByText("Hidden from your page")).toBeVisible();
+  await guest.goto(`/wedding/${slug}`);
+  await expect(guest.getByRole("heading", { level: 1 })).toBeVisible();
+  expect(await guest.content()).not.toContain("Wishing you a lifetime of adventures.");
+
+  // ── Admin console ──
+  // An ordinary signed-in couple gets "not found", not a hint that the area exists.
+  await page.goto("/admin");
+  await expect(page.getByText("This page could not be found.")).toBeVisible();
+  await page.goto("/admin/payments");
+  await expect(page.getByText("This page could not be found.")).toBeVisible();
+
+  await promoteToAdmin(email);
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByText("Contribution volume")).toBeVisible();
+
+  await page.goto("/admin/payments?status=CAPTURED");
+  await page
+    .getByRole("row")
+    .filter({ hasText: guestEmail })
+    .getByRole("link", { name: "Details" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Status history" })).toBeVisible();
+  await page.getByRole("button", { name: "Refund in full" }).click();
+  await page.getByRole("button", { name: "Refund ₹5,227.50" }).click();
+  await expect(page.getByText(/at least 5 characters/)).toBeVisible();
+  await page.getByLabel("Reason").fill("Guest paid twice by mistake");
+  await page.getByRole("button", { name: "Refund ₹5,227.50" }).click();
+  await expect(page.getByRole("button", { name: "Refund in full" })).toHaveCount(0);
+  await expect(page.getByText("Guest paid twice by mistake").first()).toBeVisible();
+
+  // The refunded gift is gone from the wishlist total and the couple's summary.
+  await guest.goto(`/wedding/${slug}`);
+  await expect(guest.getByText("₹5,100 of ₹3,00,000")).toBeVisible();
+  await page.goto("/dashboard/gifts");
+  await expect(page.getByTestId("gifts-total")).toHaveText("₹5,100");
+  await expect(page.getByText("Refunded", { exact: true })).toBeVisible();
+  await page.goto("/admin/audit");
+  await expect(page.getByText("payment.refunded").first()).toBeVisible();
+  await page.goto("/dashboard");
 
   // Unpublish hides the page from guests.
   await page.getByRole("button", { name: "Unpublish" }).click();

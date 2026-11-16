@@ -1,8 +1,30 @@
 import type { NextConfig } from "next";
 
-// Baseline security headers for every response. The Content Security Policy is
-// added with the checkout work, when the payment provider's origins are known.
+const isDev = process.env.NODE_ENV === "development";
+
+/**
+ * Content Security Policy. Only our own origin may run scripts, plus Razorpay's
+ * hosted checkout (script, frames and API). Inline scripts are allowed because
+ * Next.js streams data to the page in inline script tags; a nonce-based policy
+ * would force every page to render per request and defeat page caching.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.razorpay.com${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.razorpay.com",
+  "font-src 'self' data:",
+  `connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://cdn.razorpay.com${isDev ? " ws:" : ""}`,
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+  "form-action 'self' https://api.razorpay.com",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+].join("; ");
+
+// Security headers for every response.
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

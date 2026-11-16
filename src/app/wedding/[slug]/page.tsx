@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getEnv, isDemoPayments } from "@/lib/env";
+import { TrackView } from "@/components/analytics/track-view";
 import { WeddingView } from "@/components/wedding/wedding-view";
 import { coupleNames } from "@/lib/format";
 import { getCachedPublicWedding } from "@/lib/public-wedding";
@@ -28,7 +29,12 @@ async function Wedding({ params }: Props) {
   const { slug } = await params;
   const wedding = await getCachedPublicWedding(slug);
   if (!wedding) notFound();
-  return <WeddingView wedding={wedding} demo={isDemoPayments(getEnv())} />;
+  return (
+    <>
+      <TrackView name="wedding_page_viewed" slug={wedding.slug} />
+      <WeddingView wedding={wedding} demo={isDemoPayments(getEnv())} />
+    </>
+  );
 }
 
 export default function WeddingPage({ params }: Props) {

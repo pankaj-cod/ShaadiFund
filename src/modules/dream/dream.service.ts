@@ -2,6 +2,7 @@ import "server-only";
 import { inTransaction } from "@/lib/db";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { rupeesToPaise } from "@/lib/money";
+import { track } from "@/modules/analytics/analytics.service";
 import { recordAudit } from "@/modules/audit/audit.repository";
 import type { Actor } from "@/modules/auth/session";
 import { advanceOnboarding } from "@/modules/couple/couple.service";
@@ -73,6 +74,7 @@ export async function createDream(actor: Actor, input: unknown): Promise<DreamRe
     await advanceOnboarding(couple, ONBOARDING_STEPS.dream, tx);
     return created;
   });
+  if (existing === 0) await track("wishlist_created", { weddingId: wedding.id, dreamId: dream.id });
   return { dream: toDreamDTO(dream), slug: wedding.slug };
 }
 

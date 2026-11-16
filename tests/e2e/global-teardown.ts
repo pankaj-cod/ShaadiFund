@@ -24,8 +24,10 @@ export default async function globalTeardown(): Promise<void> {
     const weddings = `(SELECT id FROM "Wedding" WHERE "coupleId" IN (SELECT couple_id FROM doomed))`;
     const contributions = `(SELECT id FROM "Contribution" WHERE "weddingId" IN ${weddings})`;
     const payments = `(SELECT id FROM "Payment" WHERE "contributionId" IN ${contributions})`;
+    await client.query(`DELETE FROM "AnalyticsEvent" WHERE "weddingId" IN ${weddings}`);
     await client.query(`DELETE FROM "PaymentStatusTransition" WHERE "paymentId" IN ${payments}`);
     await client.query(`DELETE FROM "PaymentEvent" WHERE "paymentId" IN ${payments}`);
+    await client.query(`DELETE FROM "Refund" WHERE "paymentId" IN ${payments}`);
     await client.query(`DELETE FROM "Payment" WHERE "contributionId" IN ${contributions}`);
     await client.query(`DELETE FROM "GuestMessage" WHERE "weddingId" IN ${weddings}`);
     await client.query(`DELETE FROM "Contribution" WHERE "weddingId" IN ${weddings}`);

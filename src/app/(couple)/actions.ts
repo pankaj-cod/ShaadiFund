@@ -1,13 +1,16 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
+import { after } from "next/server";
 import { ZodError } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { weddingTag } from "@/lib/cache-tags";
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { requireActor, type Actor } from "@/modules/auth/session";
+import * as gifts from "@/modules/contribution/gifts.service";
 import * as dreams from "@/modules/dream/dream.service";
+import { dispatchNotifications } from "@/modules/notification/dispatch.service";
 import * as weddings from "@/modules/wedding/wedding.service";
 import type { DreamDTO } from "@/modules/wedding/wedding.types";
 
@@ -130,6 +133,27 @@ export async function deleteDreamAction(dreamId: string): Promise<ActionResult> 
 export async function reorderDreamsAction(ids: string[]): Promise<ActionResult> {
   return run("reorderDreams", async (actor) => {
     expire((await dreams.reorderDreams(actor, { ids })).slug);
+    return undefined;
+  });
+}
+
+export async function setGiftMessageHiddenAction(
+  contributionId: string,
+  hidden: boolean,
+): Promise<ActionResult> {
+  return run("setGiftMessageHidden", async (actor) => {
+    expire((await gifts.setGiftMessageHidden(actor, contributionId, hidden)).slug);
+    return undefined;
+  });
+}
+
+export async function sendThankYouAction(
+  contributionId: string,
+  input: unknown,
+): Promise<ActionResult> {
+  return run("sendThankYou", async (actor) => {
+    await gifts.sendThankYou(actor, contributionId, input);
+    after(() => dispatchNotifications());
     return undefined;
   });
 }

@@ -30,6 +30,10 @@ export async function findWeddingBySlug(slug: string, db: Db = getDb()) {
   return db.wedding.findUnique({ where: { slug }, select: weddingSelect });
 }
 
+export async function findWeddingById(id: string, db: Db = getDb()) {
+  return db.wedding.findUnique({ where: { id }, select: weddingSelect });
+}
+
 export async function slugExists(slug: string, db: Db = getDb()): Promise<boolean> {
   return (await db.wedding.count({ where: { slug } })) > 0;
 }
@@ -40,7 +44,7 @@ export async function createWedding(coupleId: string, slug: string, db: Db = get
 
 export interface WeddingUpdate {
   slug?: string;
-  status?: "DRAFT" | "PUBLISHED" | "UNPUBLISHED";
+  status?: "DRAFT" | "PUBLISHED" | "UNPUBLISHED" | "SUSPENDED";
   theme?: "MINIMAL_IVORY" | "ROYAL_INDIAN" | "MODERN_EDITORIAL";
   weddingDate?: Date | null;
   venueName?: string | null;

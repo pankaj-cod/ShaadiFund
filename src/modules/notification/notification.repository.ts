@@ -4,7 +4,7 @@ import { getDb, type Db } from "@/lib/db";
 export const MAX_ATTEMPTS = 5;
 
 export interface OutboxMessage {
-  type: "gift_receipt" | "gift_received";
+  type: "gift_receipt" | "gift_received" | "thank_you";
   recipient: string;
   payload: Record<string, string | number | boolean | null>;
   /** Makes enqueueing idempotent: the same key is never queued twice. */

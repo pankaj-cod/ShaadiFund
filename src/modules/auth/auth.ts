@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
+import { track } from "@/modules/analytics/analytics.service";
 import { sendEmail } from "@/modules/notification/email";
 import { magicLinkEmail } from "@/modules/notification/templates";
 
@@ -25,6 +26,9 @@ function createAuth() {
         // Never settable through any sign-up or profile API (ADR 0002).
         role: { type: "string", defaultValue: "COUPLE", input: false },
       },
+    },
+    databaseHooks: {
+      user: { create: { after: async () => track("user_registered") } },
     },
     socialProviders:
       env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET

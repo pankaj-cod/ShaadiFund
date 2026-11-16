@@ -48,19 +48,20 @@ With `PAYMENTS_MODE=mock`, open a published wedding page, choose **Contribute** 
 
 ## Commands
 
-| Command               | What it does                                                         |
-| --------------------- | -------------------------------------------------------------------- |
-| `npm run dev`         | Start the development server                                         |
-| `npm run build`       | Production build                                                     |
-| `npm run check`       | Lint, type check, format check and unit/integration tests            |
-| `npm test`            | Unit and integration tests (integration tests need the database up)  |
-| `npm run test:e2e`    | Browser tests against a production build, on phone and desktop sizes |
-| `npm run format`      | Format every file                                                    |
-| `npm run db:up`       | Start local Postgres on port 54329                                   |
-| `npm run db:down`     | Stop it                                                              |
-| `npm run db:migrate`  | Create and apply a migration after changing `prisma/schema.prisma`   |
-| `npm run db:deploy`   | Apply existing migrations (used in CI and production)                |
-| `npm run db:generate` | Regenerate the Prisma client                                         |
+| Command                            | What it does                                                         |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `npm run dev`                      | Start the development server                                         |
+| `npm run build`                    | Production build                                                     |
+| `npm run check`                    | Lint, type check, format check and unit/integration tests            |
+| `npm test`                         | Unit and integration tests (integration tests need the database up)  |
+| `npm run test:e2e`                 | Browser tests against a production build, on phone and desktop sizes |
+| `npm run format`                   | Format every file                                                    |
+| `npm run db:up`                    | Start local Postgres on port 54329                                   |
+| `npm run db:down`                  | Stop it                                                              |
+| `npm run db:migrate`               | Create and apply a migration after changing `prisma/schema.prisma`   |
+| `npm run db:deploy`                | Apply existing migrations (used in CI and production)                |
+| `npm run db:generate`              | Regenerate the Prisma client                                         |
+| `npm run admin:promote -- <email>` | Grant the admin role (`--revoke` removes it)                         |
 
 ## Environment variables
 
@@ -75,6 +76,32 @@ All variables are validated at startup by [src/lib/env.ts](src/lib/env.ts); a ba
 | `live`          | Razorpay live keys. Refused unless `LIVE_SETTLEMENT_APPROVED=true` (see ADR 0003) |
 
 Real payments are intentionally disabled until a provider-approved settlement model exists.
+
+### Razorpay test mode
+
+Set `PAYMENTS_MODE=test` with your `rzp_test_` keys. The gift form then opens Razorpay's own checkout window with a "Test Mode" ribbon; no real money moves. In that window choose Netbanking, pick any bank and press **Success** (or **Failure**) on Razorpay's test page.
+
+Razorpay cannot reach `localhost`, so webhooks do not arrive during local development. The app does not depend on them: the browser's result is verified with Razorpay directly, and the scheduled housekeeping job recovers any payment that was never reported back.
+
+To receive webhooks on a deployed site:
+
+1. In the Razorpay dashboard (Test mode) open Account & Settings, Webhooks, and add `https://<your-domain>/api/webhooks/razorpay`.
+2. Choose a secret, and select the events `payment.captured` and `payment.failed`.
+3. Put the same secret in `RAZORPAY_WEBHOOK_SECRET`. Without it every delivery is refused.
+
+### Admin console
+
+The admin console is at `/admin`. Anyone who is not an admin sees the ordinary "not found" page there. There is deliberately no screen or API for granting the role; it needs database access:
+
+```bash
+npm run admin:promote -- person@example.com
+```
+
+The person must have signed in once first. Add `--revoke` to remove the role. Access is checked against the database on every admin request, so a revoked admin loses access immediately.
+
+### Scheduled housekeeping
+
+`/api/internal/cron/housekeeping` recovers unreported payments, closes abandoned checkouts, checks every dream's total against its captured payments and retries queued email. Call it every few minutes with the header `Authorization: Bearer <CRON_SECRET>`. It answers 404 until `CRON_SECRET` is set.
 
 ### Secrets
 

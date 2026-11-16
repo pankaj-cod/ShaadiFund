@@ -106,3 +106,11 @@ export async function addFunding(dreamId: string, amountPaise: number, tx: Db): 
     data: { fundedPaise: { increment: amountPaise }, contributionCount: { increment: 1 } },
   });
 }
+
+/** Takes a refunded gift back out of a dream's totals. Only the payment service calls this. */
+export async function removeFunding(dreamId: string, amountPaise: number, tx: Db): Promise<void> {
+  await tx.dream.update({
+    where: { id: dreamId },
+    data: { fundedPaise: { decrement: amountPaise }, contributionCount: { decrement: 1 } },
+  });
+}

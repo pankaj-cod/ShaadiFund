@@ -28,9 +28,14 @@ async function Dashboard() {
             {coupleNames(workspace.couple.partnerOneName, workspace.couple.partnerTwoName)}
           </h1>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/settings">Page settings</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href="/dashboard/gifts">Gifts and messages</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/dashboard/settings">Page settings</Link>
+          </Button>
+        </div>
       </div>
       <ShareCard wedding={workspace.wedding} appUrl={getEnv().APP_URL} />
       <DreamsManager dreams={workspace.dreams} />

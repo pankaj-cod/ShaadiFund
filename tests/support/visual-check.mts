@@ -69,6 +69,12 @@ const desktop = await (
 await desktop.goto(`/wedding/${slug}`);
 await desktop.getByRole("heading", { level: 1 }).waitFor();
 await shot("8-wedding-desktop", desktop);
+if (process.argv.includes("--couple-only")) {
+  process.stdout.write(`${slug}\n`);
+  await browser.close();
+  process.exit(0);
+}
+
 // Guest gives a gift (phone).
 await page.context().clearCookies();
 await page.goto(`/wedding/${slug}`);
