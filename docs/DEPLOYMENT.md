@@ -28,10 +28,15 @@ Vercel's free Hobby plan is for personal, non-commercial projects. Once ShaadiFu
 
 In the project, open the **Storage** tab:
 
-1. **Create Database → Neon (Postgres)**. Pick the region **AWS Mumbai (ap-south-1)** or, if not offered, Singapore. Connect it to **all environments**. This sets `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+1. **Create Database → Neon (Postgres)**. Pick the region **AWS Mumbai (ap-south-1)** or, if not offered, Singapore. Connect it to **all environments**. This sets `DATABASE_URL` and `DATABASE_URL_UNPOOLED` (or the same names starting `STORAGE_`, if Vercel adds that prefix; both work).
    - In the Neon integration's settings, turn on **a database branch for each preview deployment** if offered. Otherwise preview deployments run migrations against the production database.
 2. **Create → Blob**. Connect it to all environments. This sets `BLOB_READ_WRITE_TOKEN`.
-3. **Browse Marketplace → Upstash → Redis**. Region Mumbai or Singapore. Connect it. This sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`, which ShaadiFund reads automatically.
+3. **Redis for rate limits (Upstash).** Vercel's labels change often; any one of these works:
+   - In **Storage**, click **Create Database** (or **Connect Store**) and choose **Upstash** / **Redis** from the providers listed in that dialog.
+   - Or open [vercel.com/marketplace/upstash](https://vercel.com/marketplace/upstash), press **Install**, and pick this project.
+   - Or skip Vercel: create a free database at [console.upstash.com](https://console.upstash.com) (region Mumbai, `ap-south-1`), and copy its **REST URL** and **REST token** into the environment variables `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+
+   Pick region Mumbai or Singapore. Whichever names the integration uses (`UPSTASH_REDIS_REST_*` or `KV_REST_API_*`), ShaadiFund reads both.
 
 ## 4. Environment variables
 

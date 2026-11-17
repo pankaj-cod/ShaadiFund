@@ -123,6 +123,14 @@ describe("parseEnv", () => {
       );
     });
 
+    it("finds the database under the STORAGE_ prefix Vercel may add", () => {
+      const { DATABASE_URL: _unused, ...withoutDb } = vercel;
+      expect(
+        parseEnv({ ...withoutDb, STORAGE_DATABASE_URL: "postgresql://neon/pooled" }).DATABASE_URL,
+      ).toBe("postgresql://neon/pooled");
+      expect(() => parseEnv(withoutDb)).toThrow(/DATABASE_URL/);
+    });
+
     it("uses the production domain when APP_URL is not set, and an explicit APP_URL wins", () => {
       const { APP_URL: _ignored, ...withoutUrl } = vercel;
       expect(

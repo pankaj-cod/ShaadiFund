@@ -118,6 +118,8 @@ function withPlatformDefaults(raw: Record<string, string | undefined>) {
   return {
     ...raw,
     APP_URL: raw.APP_URL || (productionHost ? `https://${productionHost}` : undefined),
+    // Vercel's Neon connection may add a prefix ("STORAGE_" by default in some accounts).
+    DATABASE_URL: raw.DATABASE_URL || raw.STORAGE_DATABASE_URL,
     UPSTASH_REDIS_REST_URL: raw.UPSTASH_REDIS_REST_URL || raw.KV_REST_API_URL,
     UPSTASH_REDIS_REST_TOKEN: raw.UPSTASH_REDIS_REST_TOKEN || raw.KV_REST_API_TOKEN,
   };
