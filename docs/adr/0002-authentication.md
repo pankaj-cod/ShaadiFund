@@ -1,6 +1,6 @@
 # ADR 0002: Authentication with Better Auth, magic link and Google
 
-**Status:** Accepted and implemented (2026-11-15) with Better Auth 1.7. Magic link is verified end to end; Google sign-in is wired but untested because no Google credentials exist yet.
+**Status:** Accepted and implemented (2026-11-17) with Better Auth 1.7. Magic link verified end to end. Google sign-in wired with account chooser, safe account linking and readable errors; the hand-off to Google is covered by browser tests with placeholder credentials, but a real Google sign-in has not been tried because no credentials exist yet.
 
 ## Context
 

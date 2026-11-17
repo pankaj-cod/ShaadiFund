@@ -8,21 +8,43 @@ import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-async function SignIn() {
-  if (await getActor()) redirect("/dashboard");
-  return <SignInForm googleEnabled={isGoogleSignInEnabled()} />;
+type Props = { searchParams: Promise<{ error?: string }> };
+
+/** Plain-language versions of the errors the sign-in providers can send back. */
+function signInErrorMessage(code: string | undefined): string | null {
+  if (!code) return null;
+  if (code === "access_denied")
+    return "Google sign-in was cancelled. You can try again, or use your email.";
+  if (code === "email_not_found" || code === "email_is_missing") {
+    return "Google did not share an email address with us, so we could not sign you in. Please use your email instead.";
+  }
+  if (code === "account_not_linked") {
+    return "An account with this email already exists but has not been verified. Sign in with your email link first, then Google will work too.";
+  }
+  if (code === "INVALID_TOKEN" || code === "EXPIRED_TOKEN") {
+    return "That sign-in link has expired or was already used. Please ask for a new one.";
+  }
+  return "We could not sign you in. Please try again.";
 }
 
-export default function SignInPage() {
+async function SignIn({ searchParams }: Props) {
+  if (await getActor()) redirect("/dashboard");
+  const { error } = await searchParams;
+  return (
+    <SignInForm googleEnabled={isGoogleSignInEnabled()} initialError={signInErrorMessage(error)} />
+  );
+}
+
+export default function SignInPage({ searchParams }: Props) {
   return (
     <AppShell glow>
       <p className="eyebrow">Welcome</p>
       <h1 className="text-h1 mt-4">Create your wedding wishlist</h1>
       <p className="text-muted-foreground mt-3 mb-8">
-        Sign in or create your account with your email. New here? The same link sets you up.
+        New here or coming back, it is the same simple step. No password needed.
       </p>
       <Suspense fallback={<PageSkeleton />}>
-        <SignIn />
+        <SignIn searchParams={searchParams} />
       </Suspense>
     </AppShell>
   );

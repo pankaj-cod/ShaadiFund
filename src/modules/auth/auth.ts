@@ -30,9 +30,23 @@ function createAuth() {
     databaseHooks: {
       user: { create: { after: async () => track("user_registered") } },
     },
+    // A failed or cancelled Google sign-in comes back to our own sign-in page with a message.
+    onAPIError: { errorURL: `${env.APP_URL}/sign-in` },
+    account: {
+      // Signing in with Google using the same address as an existing account joins the two,
+      // but only when that account's email was already verified (by an emailed link).
+      accountLinking: { enabled: true, trustedProviders: ["google"] },
+    },
     socialProviders:
       env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-        ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
+        ? {
+            google: {
+              clientId: env.GOOGLE_CLIENT_ID,
+              clientSecret: env.GOOGLE_CLIENT_SECRET,
+              // Always let the person choose which Google account to use.
+              prompt: "select_account",
+            },
+          }
         : {},
     plugins: [
       magicLink({

@@ -77,6 +77,20 @@ All variables are validated at startup by [src/lib/env.ts](src/lib/env.ts); a ba
 
 Real payments are intentionally disabled until a provider-approved settlement model exists.
 
+### Google sign-in
+
+The "Continue with Google" button appears only when both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create or pick a project.
+2. Open **APIs & Services → OAuth consent screen**. Choose **External**, fill in the app name (ShaadiFund), support email and developer email. Scopes: `openid`, `email`, `profile` only.
+3. While the app is in **Testing**, only the Google accounts you add under **Test users** can sign in. Publish the app before launch.
+4. Open **Credentials → Create credentials → OAuth client ID → Web application**.
+   - Authorised JavaScript origins: `http://localhost:3000` (and later your real domain).
+   - Authorised redirect URIs: `http://localhost:3000/api/auth/callback/google` (and later `https://<your-domain>/api/auth/callback/google`).
+5. Copy the client ID and secret into `.env.local` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, then restart `npm run dev`.
+
+Someone who first signed in with an emailed link and later chooses Google with the same address lands in the same account. Linking happens only for accounts whose email was already verified, so nobody can claim another person's account by registering their address first.
+
 ### Razorpay test mode
 
 Set `PAYMENTS_MODE=test` with your `rzp_test_` keys. The gift form then opens Razorpay's own checkout window with a "Test Mode" ribbon; no real money moves. In that window choose Netbanking, pick any bank and press **Success** (or **Failure**) on Razorpay's test page.

@@ -24,6 +24,9 @@ export default defineConfig({
     env: {
       PAYMENTS_MODE: "mock",
       EMAIL_TRANSPORT: "file",
+      // Placeholders so the Google button renders; tests stub Google itself.
+      GOOGLE_CLIENT_ID: "e2e-placeholder.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "e2e-placeholder-secret",
       APP_URL: `http://localhost:${PORT}`,
     },
   },

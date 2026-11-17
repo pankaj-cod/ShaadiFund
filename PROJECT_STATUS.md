@@ -48,6 +48,8 @@ _Last updated: 2026-11-16_
   - Draft legal pages at `/legal/privacy`, `/legal/terms`, `/legal/refunds`, `/legal/fees` and `/legal/contact`, each marked as an unreviewed draft.
   - Wedding page: reveal animations, tilting dream cards, category artwork where a dream has no photo. Gift page: word-by-word thank-you heading. Sign-in and onboarding: soft glow and page-rise animation. Buttons: gentle lift on hover.
 
+- **Google sign-in:** button first on the sign-in screen with Google's mark, account chooser every time, failed or cancelled attempts return to the sign-in page with a plain message, expired email links do the same, and a Google sign-in joins an existing account with the same verified email. Shown only when credentials are configured.
+
 ## Verified on 2026-11-16
 
 | Check                                                       | Result                                                                                   |
@@ -103,6 +105,8 @@ _Last updated: 2026-11-16_
 - Prisma's driver logs a deprecation warning ("client.query() when the client is already executing a query") during transactions. It comes from inside Prisma 7's Postgres adapter, not from application code, and will need a Prisma upgrade before `pg` 9.
 
 ## Technical debt and risks
+
+- **Google sign-in has not been tried with real credentials.** Browser tests check our side of the hand-off with placeholders; the founder needs to create a Google OAuth client (README, "Google sign-in").
 
 - **The local database, its user and its Docker volume are still called `vowfund`.** These are internal names nobody sees; renaming them would wipe local data, so they were left. Production will use its own names.
 - **`shaadifund.in` is assumed as the domain** for the support address and example links. Confirm the real domain before launch.
