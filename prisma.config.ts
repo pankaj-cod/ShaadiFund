@@ -6,7 +6,8 @@ config({ path: [".env.local", ".env"], quiet: true });
 
 // Migrations should use a direct connection when one is provided (pooled URLs
 // cannot run some migration statements).
-const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+// Neon's Vercel integration names its direct connection DATABASE_URL_UNPOOLED.
+const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

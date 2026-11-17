@@ -18,7 +18,7 @@ const bodySchema = z.object({
 /** Guest checkout, step two: verify what the provider's checkout returned to the browser. */
 export const POST = route(
   async (request: Request, context: { params: Promise<{ id: string }> }) => {
-    assertWithinRateLimit(`verify:${clientKey(request)}`, 30, 10 * 60 * 1000);
+    await assertWithinRateLimit(`verify:${clientKey(request)}`, 30, 10 * 60 * 1000);
     const { id } = await context.params;
     const { token, ...callback } = bodySchema.parse(await readJson(request));
 

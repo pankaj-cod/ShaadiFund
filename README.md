@@ -7,6 +7,8 @@ A wedding gifting platform for Indian couples. A couple publishes a page of drea
 - Where the project stands: [PROJECT_STATUS.md](PROJECT_STATUS.md)
 - How it is built: [ARCHITECTURE.md](ARCHITECTURE.md), decisions in [docs/adr](docs/adr), API in [docs/API.md](docs/API.md)
 
+- Putting it online: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
 ## Requirements
 
 - Node.js 24 or newer

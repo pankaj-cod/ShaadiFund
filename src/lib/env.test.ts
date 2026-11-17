@@ -88,4 +88,49 @@ describe("parseEnv", () => {
   it("refuses a short auth secret", () => {
     expect(() => parseEnv({ ...base, BETTER_AUTH_SECRET: "short" })).toThrow(/BETTER_AUTH_SECRET/);
   });
+
+  describe("on Vercel", () => {
+    const vercel = {
+      ...base,
+      VERCEL: "1",
+      MEDIA_STORAGE: "blob",
+      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_x",
+      EMAIL_TRANSPORT: "resend",
+      RESEND_API_KEY: "re_x",
+      KV_REST_API_URL: "https://example.upstash.io",
+      KV_REST_API_TOKEN: "t",
+      CRON_SECRET: "c",
+    };
+
+    it("accepts a complete configuration, reading Vercel's own variable names", () => {
+      const env = parseEnv(vercel);
+      expect(env.UPSTASH_REDIS_REST_URL).toBe("https://example.upstash.io");
+      expect(env.UPSTASH_REDIS_REST_TOKEN).toBe("t");
+    });
+
+    it("refuses local photo storage, file email, no shared rate limits, or no cron secret", () => {
+      expect(() => parseEnv({ ...vercel, MEDIA_STORAGE: "local" })).toThrow(/MEDIA_STORAGE/);
+      expect(() => parseEnv({ ...vercel, EMAIL_TRANSPORT: "file" })).toThrow(/EMAIL_TRANSPORT/);
+      expect(() =>
+        parseEnv({ ...vercel, KV_REST_API_URL: undefined, KV_REST_API_TOKEN: undefined }),
+      ).toThrow(/UPSTASH_REDIS_REST_URL/);
+      expect(() => parseEnv({ ...vercel, CRON_SECRET: undefined })).toThrow(/CRON_SECRET/);
+    });
+
+    it("refuses blob storage without a connected store", () => {
+      expect(() => parseEnv({ ...vercel, BLOB_READ_WRITE_TOKEN: undefined })).toThrow(
+        /BLOB_READ_WRITE_TOKEN/,
+      );
+    });
+
+    it("uses the production domain when APP_URL is not set, and an explicit APP_URL wins", () => {
+      const { APP_URL: _ignored, ...withoutUrl } = vercel;
+      expect(
+        parseEnv({ ...withoutUrl, VERCEL_PROJECT_PRODUCTION_URL: "shaadifund.vercel.app" }).APP_URL,
+      ).toBe("https://shaadifund.vercel.app");
+      expect(
+        parseEnv({ ...vercel, VERCEL_PROJECT_PRODUCTION_URL: "shaadifund.vercel.app" }).APP_URL,
+      ).toBe("http://localhost:3000");
+    });
+  });
 });

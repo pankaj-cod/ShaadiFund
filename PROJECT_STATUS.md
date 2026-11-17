@@ -4,7 +4,7 @@ _Last updated: 2026-11-16_
 
 ## Current phase
 
-**Slice 4a: the couple's gifts page, analytics and the admin console.** Built and verified with the mock payment provider. Still open from slice 3: **a complete Razorpay test payment has not been confirmed by hand.**
+**Deployment preparation.** The code is ready to run on Vercel and a step-by-step guide is in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Not deployed yet: the founder needs Vercel and Resend accounts. A complete Razorpay test payment is still unconfirmed by hand.
 
 ## Completed
 
@@ -49,6 +49,8 @@ _Last updated: 2026-11-16_
   - Wedding page: reveal animations, tilting dream cards, category artwork where a dream has no photo. Gift page: word-by-word thank-you heading. Sign-in and onboarding: soft glow and page-rise animation. Buttons: gentle lift on hover.
 
 - **Google sign-in:** button first on the sign-in screen with Google's mark, account chooser every time, failed or cancelled attempts return to the sign-in page with a plain message, expired email links do the same, and a Google sign-in joins an existing account with the same verified email. Shown only when credentials are configured.
+
+- **Hosting readiness:** photos can be stored in Vercel Blob; rate limits are shared through Upstash Redis (in-memory fallback locally); sign-in emails are limited per address; the app refuses to start on Vercel with local photo storage, file email, no shared rate limits or no cron secret; migrations run on deploy; a daily housekeeping job is scheduled; Vercel's own variable names (Neon, Upstash, production domain) are read automatically; Mumbai region; security policy allows the Blob CDN.
 
 ## Verified on 2026-11-16
 
@@ -105,6 +107,11 @@ _Last updated: 2026-11-16_
 - Prisma's driver logs a deprecation warning ("client.query() when the client is already executing a query") during transactions. It comes from inside Prisma 7's Postgres adapter, not from application code, and will need a Prisma upgrade before `pg` 9.
 
 ## Technical debt and risks
+
+- **The Vercel Blob and Upstash code has not run against the real services**, and the project has never been built on Vercel. Both are checked only by type checking and the configuration tests until the first deployment.
+- **Without a verified email domain, Resend delivers only to the founder's address**, so other people can sign in only with Google.
+- **Vercel Hobby is for non-commercial use**; Pro is needed once fees are charged.
+- **The housekeeping job runs daily** on Hobby (payment recovery and email retries wait up to a day; first-attempt emails still go immediately).
 
 - **Google sign-in has not been tried with real credentials.** Browser tests check our side of the hand-off with placeholders; the founder needs to create a Google OAuth client (README, "Google sign-in").
 

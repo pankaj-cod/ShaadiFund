@@ -82,7 +82,7 @@ export async function sendThankYou(
   contributionId: string,
   input: unknown,
 ): Promise<void> {
-  assertWithinRateLimit(`thank-you:${actor.userId}`, 60, 10 * 60 * 1000);
+  await assertWithinRateLimit(`thank-you:${actor.userId}`, 60, 10 * 60 * 1000);
   const { note } = thankYouSchema.parse(input);
   const gift = await findPaidContributionForUser(contributionId, actor.userId);
   if (!gift) throw new NotFoundError("We could not find that gift.");

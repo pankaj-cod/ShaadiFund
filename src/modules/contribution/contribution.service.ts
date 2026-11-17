@@ -35,7 +35,7 @@ export async function startContribution(
   rawInput: unknown,
   clientKey: string,
 ): Promise<CheckoutSession> {
-  assertWithinRateLimit(`checkout:${clientKey}`, 20, 10 * 60 * 1000);
+  await assertWithinRateLimit(`checkout:${clientKey}`, 20, 10 * 60 * 1000);
   const input = contributionInputSchema.parse(rawInput);
 
   let contribution = await findByIdempotencyKey(input.idempotencyKey);

@@ -55,7 +55,7 @@ export async function recordBrowserEvent(
   input: unknown,
   client: { address: string; userAgent: string },
 ): Promise<void> {
-  assertWithinRateLimit(`events:${client.address}`, 120, 10 * 60 * 1000);
+  await assertWithinRateLimit(`events:${client.address}`, 120, 10 * 60 * 1000);
   const parsed = browserEventSchema.safeParse(input);
   if (!parsed.success) return;
   const weddingId = await findPublishedWeddingId(parsed.data.slug);

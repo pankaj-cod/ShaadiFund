@@ -1,14 +1,17 @@
 import "server-only";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { put } from "@vercel/blob";
+import { getEnv } from "@/lib/env";
 
 /**
  * Where image bytes live. The local driver is for development and tests only:
- * serverless hosts have no persistent disk, so production needs an object-storage
- * driver implementing this same interface before deployment.
+ * serverless hosts have no lasting disk. The blob driver stores photos in Vercel
+ * Blob and serves them from its CDN.
  */
 export interface MediaStorage {
   put(key: string, bytes: Buffer): Promise<{ url: string }>;
+  /** Only the local driver serves files itself; blob URLs point straight at the CDN. */
   get(key: string): Promise<Buffer | null>;
 }
 
@@ -34,6 +37,24 @@ const localStorage: MediaStorage = {
   },
 };
 
+const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
+
+const blobStorage: MediaStorage = {
+  async put(key, bytes) {
+    // Keys are random UUIDs and files never change, so they can be cached for a year.
+    const result = await put(`media/${key}`, bytes, {
+      access: "public",
+      contentType: "image/webp",
+      addRandomSuffix: false,
+      cacheControlMaxAge: ONE_YEAR_SECONDS,
+    });
+    return { url: result.url };
+  },
+  async get() {
+    return null;
+  },
+};
+
 export function getMediaStorage(): MediaStorage {
-  return localStorage;
+  return getEnv().MEDIA_STORAGE === "blob" ? blobStorage : localStorage;
 }

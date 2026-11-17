@@ -27,11 +27,11 @@ describe("publishBlockers", () => {
 });
 
 describe("rate limit", () => {
-  it("allows up to the limit, then refuses until the window resets", () => {
+  it("allows up to the limit, then refuses until the window resets", async () => {
     resetRateLimits();
-    for (let i = 0; i < 3; i += 1) assertWithinRateLimit("k", 3, 1000, 0);
-    expect(() => assertWithinRateLimit("k", 3, 1000, 500)).toThrow(RateLimitedError);
-    expect(() => assertWithinRateLimit("other", 3, 1000, 500)).not.toThrow();
-    expect(() => assertWithinRateLimit("k", 3, 1000, 1000)).not.toThrow();
+    for (let i = 0; i < 3; i += 1) await assertWithinRateLimit("k", 3, 1000, 0);
+    await expect(assertWithinRateLimit("k", 3, 1000, 500)).rejects.toThrow(RateLimitedError);
+    await expect(assertWithinRateLimit("other", 3, 1000, 500)).resolves.toBeUndefined();
+    await expect(assertWithinRateLimit("k", 3, 1000, 1000)).resolves.toBeUndefined();
   });
 });

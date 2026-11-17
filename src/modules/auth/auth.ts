@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
+import { assertWithinRateLimit } from "@/lib/rate-limit";
 import { track } from "@/modules/analytics/analytics.service";
 import { sendEmail } from "@/modules/notification/email";
 import { magicLinkEmail } from "@/modules/notification/templates";
@@ -53,6 +54,8 @@ function createAuth() {
         expiresIn: MAGIC_LINK_TTL_SECONDS,
         storeToken: "hashed",
         sendMagicLink: async ({ email, url }) => {
+          // Stops anyone using the form to flood a person's inbox (and our email quota).
+          await assertWithinRateLimit(`magic-link:${email.toLowerCase()}`, 5, 15 * 60 * 1000);
           await sendEmail({ to: email, ...magicLinkEmail(url) });
         },
       }),

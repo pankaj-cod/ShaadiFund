@@ -57,7 +57,7 @@ export async function uploadImage(
   kind: UploadKind,
   bytes: Buffer,
 ): Promise<ImageDTO & { slug: string }> {
-  assertWithinRateLimit(`upload:${actor.userId}`, 30, 10 * 60 * 1000);
+  await assertWithinRateLimit(`upload:${actor.userId}`, 30, 10 * 60 * 1000);
   const { couple, wedding } = await requireOwnWedding(actor);
   const image = await processImage(bytes, kind);
 

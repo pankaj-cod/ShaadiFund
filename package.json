@@ -20,13 +20,17 @@
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run test",
-    "admin:promote": "node scripts/promote-admin.mjs"
+    "admin:promote": "node scripts/promote-admin.mjs",
+    "vercel-build": "prisma migrate deploy && next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.6",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@tabler/icons-react": "^3.52.0",
+    "@upstash/ratelimit": "2.2.0",
+    "@upstash/redis": "1.40.0",
+    "@vercel/blob": "2.8.2",
     "better-auth": "^1.7.25",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",

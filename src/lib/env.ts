@@ -33,10 +33,39 @@ const envSchema = z
     // Shared secret that scheduled jobs send as a bearer token to /api/internal/cron/*.
     CRON_SECRET: optionalString,
 
-    // Media: "local" stores images on this machine's disk (development and tests only).
-    MEDIA_STORAGE: z.enum(["local"]).default("local"),
+    // Media: "local" stores images on this machine's disk (development and tests only);
+    // "blob" stores them in Vercel Blob.
+    MEDIA_STORAGE: z.enum(["local", "blob"]).default("local"),
+    BLOB_READ_WRITE_TOKEN: optionalString,
+    BLOB_STORE_ID: optionalString,
+
+    // Shared rate limits (Upstash Redis). Vercel's Upstash integration names them KV_REST_API_*.
+    UPSTASH_REDIS_REST_URL: optionalString,
+    UPSTASH_REDIS_REST_TOKEN: optionalString,
+
+    // Set by Vercel itself. Used to refuse settings that cannot work there.
+    VERCEL: optionalString,
   })
   .superRefine((env, ctx) => {
+    const require = (path: string, ok: boolean, message: string) => {
+      if (!ok) ctx.addIssue({ code: "custom", path: [path], message });
+    };
+    require("BLOB_READ_WRITE_TOKEN", env.MEDIA_STORAGE !== "blob" ||
+      Boolean(
+        env.BLOB_READ_WRITE_TOKEN || env.BLOB_STORE_ID,
+      ), "MEDIA_STORAGE=blob needs a connected Vercel Blob store (BLOB_READ_WRITE_TOKEN)");
+    require("UPSTASH_REDIS_REST_TOKEN", Boolean(env.UPSTASH_REDIS_REST_URL) ===
+      Boolean(env.UPSTASH_REDIS_REST_TOKEN), "The Upstash REST URL and token must be set together");
+    // On Vercel there is no lasting disk and many server instances run at once, so the
+    // local fallbacks would silently lose photos and emails and not limit abuse.
+    if (env.VERCEL === "1") {
+      require("MEDIA_STORAGE", env.MEDIA_STORAGE === "blob", "must be blob on Vercel");
+      require("EMAIL_TRANSPORT", env.EMAIL_TRANSPORT === "resend", "must be resend on Vercel");
+      require("UPSTASH_REDIS_REST_URL", Boolean(
+        env.UPSTASH_REDIS_REST_URL,
+      ), "connect Upstash Redis for shared rate limits on Vercel");
+      require("CRON_SECRET", Boolean(env.CRON_SECRET), "is required on Vercel for scheduled jobs");
+    }
     if (env.EMAIL_TRANSPORT === "resend" && !env.RESEND_API_KEY) {
       ctx.addIssue({
         code: "custom",
@@ -80,9 +109,23 @@ const envSchema = z
 
 export type Env = z.infer<typeof envSchema>;
 
+/**
+ * Fills in values that hosting integrations provide under their own names, so
+ * they do not have to be copied by hand. Explicit settings always win.
+ */
+function withPlatformDefaults(raw: Record<string, string | undefined>) {
+  const productionHost = raw.VERCEL_PROJECT_PRODUCTION_URL;
+  return {
+    ...raw,
+    APP_URL: raw.APP_URL || (productionHost ? `https://${productionHost}` : undefined),
+    UPSTASH_REDIS_REST_URL: raw.UPSTASH_REDIS_REST_URL || raw.KV_REST_API_URL,
+    UPSTASH_REDIS_REST_TOKEN: raw.UPSTASH_REDIS_REST_TOKEN || raw.KV_REST_API_TOKEN,
+  };
+}
+
 /** Parses raw environment variables. Throws a readable error listing every problem. */
 export function parseEnv(raw: Record<string, string | undefined>): Env {
-  const result = envSchema.safeParse(raw);
+  const result = envSchema.safeParse(withPlatformDefaults(raw));
   if (!result.success) {
     const problems = result.error.issues
       .map((issue) => `  ${issue.path.join(".") || "(root)"}: ${issue.message}`)
