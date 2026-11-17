@@ -110,18 +110,53 @@ const envSchema = z
 export type Env = z.infer<typeof envSchema>;
 
 /**
+ * The value of the first variable (in name order) whose name matches, if any.
+ * Vercel can prefix integration variables (for example "STORAGE_KV_REST_API_URL"),
+ * so these are found by their ending rather than their full name.
+ */
+function findBySuffix(
+  raw: Record<string, string | undefined>,
+  pattern: RegExp,
+  valueCheck: (value: string) => boolean = () => true,
+): string | undefined {
+  return Object.keys(raw)
+    .sort()
+    .filter((key) => pattern.test(key))
+    .map((key) => raw[key]?.trim())
+    .find((value): value is string => Boolean(value) && valueCheck(value as string));
+}
+
+/**
  * Fills in values that hosting integrations provide under their own names, so
  * they do not have to be copied by hand. Explicit settings always win.
  */
 function withPlatformDefaults(raw: Record<string, string | undefined>) {
   const productionHost = raw.VERCEL_PROJECT_PRODUCTION_URL;
+  const onVercel = raw.VERCEL === "1";
   return {
     ...raw,
     APP_URL: raw.APP_URL || (productionHost ? `https://${productionHost}` : undefined),
-    // Vercel's Neon connection may add a prefix ("STORAGE_" by default in some accounts).
+    // On Vercel only the cloud options can work, so they are the defaults there.
+    MEDIA_STORAGE: raw.MEDIA_STORAGE || (onVercel ? "blob" : undefined),
+    EMAIL_TRANSPORT: raw.EMAIL_TRANSPORT || (onVercel ? "resend" : undefined),
+    // Neon's connection may add a prefix ("STORAGE_" by default in some accounts).
     DATABASE_URL: raw.DATABASE_URL || raw.STORAGE_DATABASE_URL,
-    UPSTASH_REDIS_REST_URL: raw.UPSTASH_REDIS_REST_URL || raw.KV_REST_API_URL,
-    UPSTASH_REDIS_REST_TOKEN: raw.UPSTASH_REDIS_REST_TOKEN || raw.KV_REST_API_TOKEN,
+    // Upstash: KV_REST_API_* from Vercel's integration, UPSTASH_REDIS_REST_* from Upstash
+    // itself, either possibly with a prefix. The read-only token is never picked.
+    UPSTASH_REDIS_REST_URL:
+      raw.UPSTASH_REDIS_REST_URL ||
+      raw.KV_REST_API_URL ||
+      findBySuffix(raw, /_(KV_REST_API_URL|UPSTASH_REDIS_REST_URL)$/, (v) =>
+        v.startsWith("https://"),
+      ),
+    UPSTASH_REDIS_REST_TOKEN:
+      raw.UPSTASH_REDIS_REST_TOKEN ||
+      raw.KV_REST_API_TOKEN ||
+      findBySuffix(raw, /_(KV_REST_API_TOKEN|UPSTASH_REDIS_REST_TOKEN)$/),
+    // Vercel Blob tokens always start with "vercel_blob_rw_", whatever the variable is called.
+    BLOB_READ_WRITE_TOKEN:
+      raw.BLOB_READ_WRITE_TOKEN ||
+      findBySuffix(raw, /READ_WRITE_TOKEN$/, (v) => v.startsWith("vercel_blob_rw_")),
   };
 }
 

@@ -47,6 +47,8 @@ const blobStorage: MediaStorage = {
       contentType: "image/webp",
       addRandomSuffix: false,
       cacheControlMaxAge: ONE_YEAR_SECONDS,
+      // Passed explicitly because the store's token may be under a prefixed name.
+      token: getEnv().BLOB_READ_WRITE_TOKEN,
     });
     return { url: result.url };
   },

@@ -131,6 +131,31 @@ describe("parseEnv", () => {
       expect(() => parseEnv(withoutDb)).toThrow(/DATABASE_URL/);
     });
 
+    it("defaults to cloud photo storage and Resend on Vercel, and finds prefixed integration variables", () => {
+      const env = parseEnv({
+        ...base,
+        VERCEL: "1",
+        RESEND_API_KEY: "re_x",
+        CRON_SECRET: "c",
+        STORAGE_KV_REST_API_URL: "https://prefixed.upstash.io",
+        STORAGE_KV_REST_API_TOKEN: "write-token",
+        STORAGE_KV_REST_API_READ_ONLY_TOKEN: "read-only-token",
+        STORAGE_READ_WRITE_TOKEN: "vercel_blob_rw_abc",
+        SOME_OTHER_READ_WRITE_TOKEN: "not-a-blob-token",
+      });
+      expect(env.MEDIA_STORAGE).toBe("blob");
+      expect(env.EMAIL_TRANSPORT).toBe("resend");
+      expect(env.UPSTASH_REDIS_REST_URL).toBe("https://prefixed.upstash.io");
+      expect(env.UPSTASH_REDIS_REST_TOKEN).toBe("write-token");
+      expect(env.BLOB_READ_WRITE_TOKEN).toBe("vercel_blob_rw_abc");
+    });
+
+    it("still lets an explicit choice win, and keeps local defaults off Vercel", () => {
+      expect(() => parseEnv({ ...vercel, MEDIA_STORAGE: "local" })).toThrow(/MEDIA_STORAGE/);
+      expect(parseEnv(base).MEDIA_STORAGE).toBe("local");
+      expect(parseEnv(base).EMAIL_TRANSPORT).toBe("file");
+    });
+
     it("uses the production domain when APP_URL is not set, and an explicit APP_URL wins", () => {
       const { APP_URL: _ignored, ...withoutUrl } = vercel;
       expect(

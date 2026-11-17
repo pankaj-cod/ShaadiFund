@@ -64,7 +64,7 @@ openssl rand -base64 36
 
 `APP_URL` is optional: it defaults to the project's production domain. Set it once you add your own domain (for example `https://shaadifund.in`).
 
-The app refuses to start on Vercel if photo storage, email, rate limits or the cron secret are missing, and the error names the missing setting.
+Database, Blob and Upstash variables are found even if Vercel gave them a prefix such as `STORAGE_`. The app refuses to start on Vercel if photo storage, email, rate limits or the cron secret are missing, and the error names the missing setting.
 
 ## 5. Deploy
 
