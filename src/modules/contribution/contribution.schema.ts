@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { emailField } from "@/lib/email-field";
 import { DEFAULT_LIMITS, PAISE_PER_RUPEE } from "@/lib/money";
 
 /** Checkout settings. Defaults live here; an admin screen will make them editable. */
@@ -24,7 +25,7 @@ export const contributionInputSchema = z.object({
     .trim()
     .min(2, "Please enter your name")
     .max(80, "Use at most 80 characters"),
-  guestEmail: z.email("Please enter a valid email address").trim().toLowerCase(),
+  guestEmail: emailField(),
   isAnonymous: z.boolean(),
   message: z.string().trim().max(500, "Use at most 500 characters"),
   messageVisibility: z.enum(MESSAGE_VISIBILITIES),

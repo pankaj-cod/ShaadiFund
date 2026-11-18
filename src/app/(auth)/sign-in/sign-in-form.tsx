@@ -5,13 +5,14 @@ import { Loader2, MailCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { emailField } from "@/lib/email-field";
 import { Field, fieldAria, FormMessage } from "@/components/forms/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/modules/auth/auth-client";
 
 const schema = z.object({
-  email: z.email("Please enter a valid email address").trim().toLowerCase(),
+  email: emailField(),
 });
 type Values = z.infer<typeof schema>;
 

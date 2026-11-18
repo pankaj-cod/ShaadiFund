@@ -582,3 +582,31 @@ model PlatformConfig {
   value     Json
   updatedAt DateTime @updatedAt
 }
+
+// ───────────────────────── Early access ─────────────────────────
+
+enum WaitlistRole {
+  COUPLE
+  GUEST
+  PLANNER
+  OTHER
+}
+
+// People who asked to hear when ShaadiFund opens. One row per email address.
+model WaitlistEntry {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  email        String       @unique
+  name         String?
+  role         WaitlistRole
+  // YYYY-MM, couples only.
+  weddingMonth String?
+  city         String?
+  // Where they came from: "home", or a campaign tag from ?ref=.
+  source       String       @default("home")
+  consentAt    DateTime
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([createdAt])
+  @@index([role, createdAt])
+}

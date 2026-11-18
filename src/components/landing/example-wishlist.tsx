@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { DreamArt } from "@/components/dream/dream-art";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
@@ -30,8 +31,19 @@ export function ExampleWishlist() {
             key={dream.id}
             className={index === 0 || index === 3 ? "md:col-span-2" : undefined}
             header={
-              <div className="min-h-24 flex-1 overflow-hidden rounded-lg">
-                <DreamArt category={dream.category} />
+              <div className="relative min-h-28 flex-1 overflow-hidden rounded-lg">
+                {dream.coverImage ? (
+                  <Image
+                    src={dream.coverImage.url}
+                    alt=""
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, 66vw"
+                    className="object-cover transition-transform duration-700 group-hover/bento:scale-[1.04]"
+                  />
+                ) : (
+                  <DreamArt category={dream.category} />
+                )}
               </div>
             }
             icon={<p className="eyebrow">{DREAM_CATEGORY_LABELS[dream.category]}</p>}

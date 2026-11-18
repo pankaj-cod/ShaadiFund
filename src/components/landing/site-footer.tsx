@@ -1,31 +1,39 @@
 import Link from "next/link";
+import { getEnv } from "@/lib/env";
+import { STOCK_PHOTOS } from "@/lib/stock-photos";
 
-const LINKS: { heading: string; items: [string, string][] }[] = [
-  {
-    heading: "ShaadiFund",
-    items: [
-      ["How it works", "/#how-it-works"],
-      ["Explore a demo wedding", "/demo"],
-      ["Create your wishlist", "/sign-in"],
-    ],
-  },
-  {
-    heading: "Legal",
-    items: [
-      ["Privacy", "/legal/privacy"],
-      ["Terms", "/legal/terms"],
-      ["Refunds and cancellations", "/legal/refunds"],
-      ["Payments and fees", "/legal/fees"],
-    ],
-  },
-  {
-    heading: "Help",
-    items: [
-      ["Common questions", "/#faq"],
-      ["Contact us", "/legal/contact"],
-    ],
-  },
-];
+function links(): { heading: string; items: [string, string][] }[] {
+  return [
+    {
+      heading: "ShaadiFund",
+      items: [
+        ["How it works", "/#how-it-works"],
+        ["Explore a demo wedding", "/demo"],
+        [
+          getEnv().SIGNUPS_OPEN ? "Create your wishlist" : "Join the waitlist",
+          getEnv().SIGNUPS_OPEN ? "/sign-in" : "/#join",
+        ],
+        ["Sign in", "/sign-in"],
+      ],
+    },
+    {
+      heading: "Legal",
+      items: [
+        ["Privacy", "/legal/privacy"],
+        ["Terms", "/legal/terms"],
+        ["Refunds and cancellations", "/legal/refunds"],
+        ["Payments and fees", "/legal/fees"],
+      ],
+    },
+    {
+      heading: "Help",
+      items: [
+        ["Common questions", "/#faq"],
+        ["Contact us", "/legal/contact"],
+      ],
+    },
+  ];
+}
 
 export function SiteFooter() {
   return (
@@ -37,7 +45,7 @@ export function SiteFooter() {
             Give them memories, not things. A wedding gifting experience for Indian couples.
           </p>
         </div>
-        {LINKS.map((group) => (
+        {links().map((group) => (
           <nav key={group.heading} aria-label={group.heading}>
             <p className="eyebrow">{group.heading}</p>
             <ul className="mt-4 grid gap-2.5 text-sm">
@@ -55,9 +63,31 @@ export function SiteFooter() {
           </nav>
         ))}
       </div>
-      <p className="text-muted-foreground border-t px-6 py-6 text-center text-xs">
-        ShaadiFund is in preview. Payments currently run in demo mode and no real money moves.
-      </p>
+      <div className="text-muted-foreground border-t px-6 py-6 text-center text-xs">
+        <p>
+          ShaadiFund is in preview. Payments currently run in demo mode and no real money moves.
+        </p>
+        <p className="mt-2">
+          Sample photos by{" "}
+          {Object.values(STOCK_PHOTOS).map((photo, index, all) => (
+            <span key={photo.page}>
+              <a href={photo.page} className="underline-offset-4 hover:underline" rel="noopener">
+                {photo.photographer}
+              </a>
+              {index < all.length - 2 ? ", " : index === all.length - 2 ? " and " : ""}
+            </span>
+          ))}{" "}
+          on{" "}
+          <a
+            href="https://unsplash.com"
+            className="underline-offset-4 hover:underline"
+            rel="noopener"
+          >
+            Unsplash
+          </a>
+          .
+        </p>
+      </div>
     </footer>
   );
 }

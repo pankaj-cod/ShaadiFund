@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { DreamArt } from "@/components/dream/dream-art";
+import Image from "next/image";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Button } from "@/components/ui/button";
 import { FlipWords } from "@/components/ui/flip-words";
 import { FundingProgress } from "@/components/ui/funding-progress";
 import { TiltCard } from "@/components/ui/tilt-card";
+import { stockPhotoUrl } from "@/lib/stock-photos";
 
 const DREAMS = [
   "a week in the Swiss Alps",
@@ -14,7 +15,7 @@ const DREAMS = [
   "a road trip through Ladakh",
 ] as const;
 
-export function Hero() {
+export function Hero({ signupsOpen }: { signupsOpen: boolean }) {
   return (
     <AuroraBackground className="h-auto min-h-svh px-6 pt-32 pb-20">
       <div className="max-w-page relative z-10 mx-auto grid w-full items-center gap-14 lg:grid-cols-[1.15fr_0.85fr]">
@@ -35,7 +36,11 @@ export function Hero() {
             style={{ animationDelay: "240ms" }}
           >
             <Button asChild size="lg" className="h-12 rounded-full px-7 text-base">
-              <Link href="/sign-in">Create Your Wedding Wishlist</Link>
+              {signupsOpen ? (
+                <Link href="/sign-in">Create Your Wedding Wishlist</Link>
+              ) : (
+                <Link href="#join">Join the Early-Access List</Link>
+              )}
             </Button>
             <Button
               asChild
@@ -50,7 +55,9 @@ export function Hero() {
             className="text-muted-foreground animate-rise mt-5 text-sm"
             style={{ animationDelay: "320ms" }}
           >
-            Free for couples. Guests give without creating an account.
+            {signupsOpen
+              ? "Free for couples. Guests give without creating an account."
+              : "Opening to a small group of couples first. Free for couples."}
           </p>
         </div>
 
@@ -58,7 +65,15 @@ export function Hero() {
           <TiltCard strength={18}>
             <figure className="bg-card shadow-lift overflow-hidden rounded-3xl border">
               <div className="relative aspect-[4/3]">
-                <DreamArt category="HONEYMOON" />
+                <Image
+                  src={stockPhotoUrl("alps", 900)}
+                  alt="A red mountain train passing snowy peaks in the Swiss Alps"
+                  fill
+                  priority
+                  unoptimized
+                  sizes="(max-width: 1024px) 90vw, 384px"
+                  className="object-cover"
+                />
                 <span className="bg-card/90 absolute top-4 left-4 rounded-full px-3 py-1 text-xs font-medium">
                   Sample dream
                 </span>

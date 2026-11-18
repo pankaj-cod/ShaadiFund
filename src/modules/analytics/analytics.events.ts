@@ -11,6 +11,7 @@ export const ANALYTICS_EVENTS = [
   "guest_message_submitted",
   "contribution_succeeded",
   "payment_failed",
+  "waitlist_joined",
 ] as const;
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 

@@ -115,6 +115,14 @@ npm run admin:promote -- person@example.com
 
 The person must have signed in once first. Add `--revoke` to remove the role. Access is checked against the database on every admin request, so a revoked admin loses access immediately.
 
+### Early-access waitlist
+
+While `SIGNUPS_OPEN` is unset or `false`, the home page asks visitors to join the early-access list instead of creating a wishlist. Sign-in at `/sign-in` keeps working for anyone with the link. Set `SIGNUPS_OPEN=true` (and redeploy) to switch the home page back to sign-ups.
+
+Add `?ref=<tag>` to links you share (for example `https://shaadi-fund.vercel.app/?ref=instagram`) to see where sign-ups came from. Admins see the list at `/admin/waitlist` and can download it as a spreadsheet.
+
+No confirmation email is sent yet: until a sending domain is verified in Resend, it could only reach the founder.
+
 ### Scheduled housekeeping
 
 `/api/internal/cron/housekeeping` recovers unreported payments, closes abandoned checkouts, checks every dream's total against its captured payments and retries queued email. Call it every few minutes with the header `Authorization: Bearer <CRON_SECRET>`. It answers 404 until `CRON_SECRET` is set.

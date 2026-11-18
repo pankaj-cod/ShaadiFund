@@ -1,6 +1,25 @@
 "use client";
 
+import Image from "next/image";
 import { WobbleCard } from "@/components/ui/wobble-card";
+import { stockPhotoUrl, type StockPhotoKey } from "@/lib/stock-photos";
+
+/** A photo filling the card, darkened on the reading side so the text stays legible. */
+function CardPhoto({ photo, tint }: { photo: StockPhotoKey; tint: string }) {
+  return (
+    <>
+      <Image
+        src={stockPhotoUrl(photo, 1400)}
+        alt=""
+        fill
+        unoptimized
+        sizes="(max-width: 1024px) 100vw, 66vw"
+        className="object-cover"
+      />
+      <div className={`absolute inset-0 ${tint}`} aria-hidden="true" />
+    </>
+  );
+}
 
 export function Audiences() {
   return (
@@ -13,25 +32,35 @@ export function Audiences() {
       </div>
 
       <div className="mt-12 grid gap-4 lg:grid-cols-3">
-        <WobbleCard containerClassName="bg-primary lg:col-span-2 min-h-[20rem]" className="py-12">
-          <p className="text-eyebrow font-semibold tracking-[0.18em] text-[#e8c987] uppercase">
+        <WobbleCard containerClassName="bg-primary lg:col-span-2 min-h-[22rem]" className="py-12">
+          <CardPhoto
+            photo="festiveCouple"
+            tint="bg-gradient-to-r from-[#1c1a17]/95 via-[#1c1a17]/75 to-[#1c1a17]/10"
+          />
+          <p className="text-eyebrow relative font-semibold tracking-[0.18em] text-[#e8c987] uppercase">
             For couples
           </p>
-          <h3 className="font-heading text-primary-foreground mt-4 max-w-md text-3xl sm:text-4xl">
+          <h3 className="font-heading text-primary-foreground relative mt-4 max-w-md text-3xl sm:text-4xl">
             Receive what you will actually remember
           </h3>
-          <p className="text-primary-foreground/75 mt-4 max-w-md">
+          <p className="text-primary-foreground/80 relative mt-4 max-w-md">
             No duplicate gifts, no awkward envelopes to track. One beautiful page, every message
             kept in one place, and a simple way to thank each person.
           </p>
         </WobbleCard>
 
-        <WobbleCard containerClassName="bg-[#6b1a22] min-h-[20rem]" className="py-12">
-          <p className="text-eyebrow font-semibold tracking-[0.18em] text-[#e8c987] uppercase">
+        <WobbleCard containerClassName="bg-[#6b1a22] min-h-[22rem]" className="py-12">
+          <CardPhoto
+            photo="henna"
+            tint="bg-gradient-to-t from-[#4a1016]/95 via-[#4a1016]/80 to-[#4a1016]/45"
+          />
+          <p className="text-eyebrow relative font-semibold tracking-[0.18em] text-[#e8c987] uppercase">
             For guests
           </p>
-          <h3 className="font-heading mt-4 text-3xl text-[#fbefd9]">Give something that matters</h3>
-          <p className="mt-4 text-[#fbefd9]/80">
+          <h3 className="font-heading relative mt-4 text-3xl text-[#fbefd9]">
+            Give something that matters
+          </h3>
+          <p className="relative mt-4 text-[#fbefd9]/85">
             Choose the dream that feels like you, give any amount, and say it in your own words.
             Wherever in the world you are.
           </p>

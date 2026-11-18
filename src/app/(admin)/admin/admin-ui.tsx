@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   ["/admin", "Overview"],
   ["/admin/couples", "Couples"],
+  ["/admin/waitlist", "Waitlist"],
   ["/admin/payments", "Payments"],
   ["/admin/events", "Webhook events"],
   ["/admin/audit", "Audit log"],

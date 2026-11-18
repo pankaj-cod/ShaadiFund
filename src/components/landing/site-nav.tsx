@@ -29,7 +29,10 @@ function Logo() {
 }
 
 /** Site navigation: a full-width bar that tightens into a floating pill on scroll. */
-export function SiteNav() {
+export function SiteNav({ signupsOpen }: { signupsOpen: boolean }) {
+  const primary = signupsOpen
+    ? { href: "/sign-in", label: "Create your wishlist" }
+    : { href: "/#join", label: "Join the waitlist" };
   const [open, setOpen] = useState(false);
   return (
     <Navbar className="fixed top-0 pt-3">
@@ -40,8 +43,8 @@ export function SiteNav() {
           <NavbarButton as={Link} href="/sign-in" variant="secondary">
             Sign in
           </NavbarButton>
-          <NavbarButton as={Link} href="/sign-in" variant="dark">
-            Create your wishlist
+          <NavbarButton as={Link} href={primary.href} variant="dark">
+            {primary.label}
           </NavbarButton>
         </div>
       </NavBody>
@@ -66,8 +69,14 @@ export function SiteNav() {
             <NavbarButton as={Link} href="/sign-in" variant="primary" className="w-full">
               Sign in
             </NavbarButton>
-            <NavbarButton as={Link} href="/sign-in" variant="dark" className="w-full">
-              Create your wishlist
+            <NavbarButton
+              as={Link}
+              href={primary.href}
+              variant="dark"
+              className="w-full"
+              onClick={() => setOpen(false)}
+            >
+              {primary.label}
             </NavbarButton>
           </div>
         </MobileNavMenu>

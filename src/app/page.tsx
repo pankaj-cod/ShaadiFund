@@ -10,17 +10,18 @@ import { Testimonials } from "@/components/landing/testimonials";
 import { getEnv, isDemoPayments } from "@/lib/env";
 
 export default function HomePage() {
+  const env = getEnv();
   return (
     <>
-      <SiteNav />
+      <SiteNav signupsOpen={env.SIGNUPS_OPEN} />
       <main className="flex-1">
-        <Hero />
+        <Hero signupsOpen={env.SIGNUPS_OPEN} />
         <HowItWorks />
         <Audiences />
         <ExampleWishlist />
         <Testimonials />
-        <FeesAndFaq demo={isDemoPayments(getEnv())} />
-        <ClosingCta />
+        <FeesAndFaq demo={isDemoPayments(env)} />
+        <ClosingCta signupsOpen={env.SIGNUPS_OPEN} />
       </main>
       <SiteFooter />
     </>

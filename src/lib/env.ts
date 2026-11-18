@@ -43,6 +43,13 @@ const envSchema = z
     UPSTASH_REDIS_REST_URL: optionalString,
     UPSTASH_REDIS_REST_TOKEN: optionalString,
 
+    // "false" (default): the home page invites people to the early-access waitlist.
+    // "true": it invites them to create a wishlist straight away. Sign-in works either way.
+    SIGNUPS_OPEN: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+
     // Set by Vercel itself. Used to refuse settings that cannot work there.
     VERCEL: optionalString,
   })

@@ -27,6 +27,7 @@ const DOCS: Record<string, LegalDoc> = {
         [
           "From couples: your email address, your names, wedding date and venue, the photos and text you add to your page, and the dreams you list.",
           "From guests: your name, email address, the amount you give, and the message you choose to write. We ask for nothing else.",
+          "From people who join the early-access list: your email address, and if you choose to give them, your name, whether you are planning a wedding, the month of your wedding and your city. We use these only to tell you when ShaadiFund opens and to understand who is interested.",
           "Card, UPI and bank details are entered in the payment provider's own window. They never reach ShaadiFund and we do not store them.",
         ],
       ],
@@ -46,7 +47,7 @@ const DOCS: Record<string, LegalDoc> = {
       [
         "Your choices",
         [
-          `You can ask us to correct or delete your information by writing to ${SUPPORT_EMAIL}. We may need to keep records of payments for as long as the law requires.`,
+          `You can ask us to correct or delete your information, or to take you off the early-access list, by writing to ${SUPPORT_EMAIL}. We may need to keep records of payments for as long as the law requires.`,
         ],
       ],
     ],
