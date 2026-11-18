@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { getEnv } from "@/lib/env";
 import "./globals.css";
 
 const display = Cormorant_Garamond({
@@ -17,14 +18,28 @@ const body = Manrope({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "ShaadiFund: Give them memories, not things",
-    template: "%s | ShaadiFund",
-  },
-  description:
-    "A wedding gifting experience for Indian couples. Guests contribute towards the dreams a couple wants to live, with a personal message.",
-};
+const DESCRIPTION =
+  "A wedding gifting experience for Indian couples. Guests contribute towards the dreams a couple wants to live, with a personal message.";
+
+export function generateMetadata(): Metadata {
+  return {
+    // Link previews need absolute addresses; this makes relative ones work.
+    metadataBase: new URL(getEnv().APP_URL),
+    title: {
+      default: "ShaadiFund: Give them memories, not things",
+      template: "%s | ShaadiFund",
+    },
+    description: DESCRIPTION,
+    openGraph: {
+      siteName: "ShaadiFund",
+      locale: "en_IN",
+      type: "website",
+      title: "ShaadiFund: Give them memories, not things",
+      description: DESCRIPTION,
+    },
+    twitter: { card: "summary_large_image" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#fbf8f2",

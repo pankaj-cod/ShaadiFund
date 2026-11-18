@@ -6,6 +6,10 @@ import { DEMO_WEDDING } from "@/lib/demo-wedding";
 export const metadata: Metadata = {
   title: "Demo wedding",
   description: "A sample ShaadiFund wedding page, with made-up names, dreams and messages.",
+  openGraph: {
+    title: "Meera & Arjun: a sample ShaadiFund wedding page",
+    description: "See how a couple's wedding wishlist looks to their guests.",
+  },
 };
 
 /** A sample wedding page. Everything on it is invented; nothing can be contributed to. */

@@ -55,6 +55,8 @@ _Last updated: 2026-11-16_
 - **Early-access waitlist:** the home page (hero, navigation, closing section, footer) invites visitors to join a waitlist unless `SIGNUPS_OPEN=true`; the form asks for email, optional name, who they are, wedding month for couples and city, with explicit consent; repeat sign-ups update the entry without revealing it existed; `?ref=` campaign tags are recorded; admins get `/admin/waitlist` with totals and a spreadsheet download protected against formula injection; a `waitlist_joined` analytics event; the privacy page covers it.
 - **Email fields** in sign-in, checkout and the waitlist now accept addresses with stray spaces or capitals (previously rejected).
 
+- **Link previews:** generated preview images for the home page (headline beside a wedding photo), the demo wedding (names over the couple's photo), and every published wedding page (the couple's names, date and venue over their own cover photo, or on ivory without one). Unpublished and unknown addresses get the general preview, so a draft's names never leak. Fonts and photos are cached, and a failure to fetch them falls back to plain text rather than breaking the preview.
+
 ## Verified on 2026-11-16
 
 | Check                                                       | Result                                                                                   |
@@ -110,6 +112,8 @@ _Last updated: 2026-11-16_
 - Prisma's driver logs a deprecation warning ("client.query() when the client is already executing a query") during transactions. It comes from inside Prisma 7's Postgres adapter, not from application code, and will need a Prisma upgrade before `pg` 9.
 
 ## Technical debt and risks
+
+- **The per-wedding preview image has not been checked against a real database** (local Docker unavailable). The home and demo previews were checked by eye.
 
 - **The waitlist sends no confirmation email**, because Resend can only deliver to the founder until a domain is verified. There is also no self-service way to leave the list; removal is by email request.
 

@@ -18,9 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${names}: our wedding wishlist`,
     description: `Celebrate with ${names} and help bring their dreams to life.`,
     robots: wedding.allowIndexing ? undefined : { index: false, follow: false },
+    // The preview image comes from opengraph-image.tsx in this folder.
     openGraph: {
       title: `${names}: our wedding wishlist`,
-      images: wedding.heroImage ? [wedding.heroImage.url] : undefined,
+      description: `Celebrate with ${names} and help bring their dreams to life.`,
+      type: "website",
     },
   };
 }
