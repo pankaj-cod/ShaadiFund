@@ -20,6 +20,13 @@ if (!url) {
   process.exit(1);
 }
 
+if (!/^postgres(ql)?:\/\/[^@\s]+@[^/\s]+\//.test(url)) {
+  console.error(
+    "DIRECT_URL is not a database address. Paste the full value from Vercel (it starts with postgresql://) between the quotes.",
+  );
+  process.exit(1);
+}
+
 const client = new pg.Client({ connectionString: url });
 await client.connect();
 try {

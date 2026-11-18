@@ -66,6 +66,12 @@ openssl rand -base64 36
 
 Database, Blob and Upstash variables are found even if Vercel gave them a prefix such as `STORAGE_`. The app refuses to start on Vercel if photo storage, email, rate limits or the cron secret are missing, and the error names the missing setting.
 
+### If sign-in emails do not arrive
+
+- The build refuses to finish on Vercel while `EMAIL_FROM` is the local placeholder (`…@shaadifund.test`).
+- Until a domain is verified in Resend, Resend delivers only to the address you signed up to Resend with. Everyone else sees "We could not email you a sign-in link just now" and is pointed to Google.
+- The exact reason Resend gives is written to **Logs** as "Sign-in email could not be sent".
+
 ## 5. Deploy
 
 **Deployments → the failed deployment → ⋯ → Redeploy.** The build applies database migrations (`prisma migrate deploy`) before building.

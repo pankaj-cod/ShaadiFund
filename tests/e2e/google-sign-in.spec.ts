@@ -46,3 +46,23 @@ test("a forged return from Google is refused and explained", async ({ page }) =>
   await expect(page).toHaveURL(/\/sign-in\?error=/);
   await expect(page.getByText(/could not sign you in/i)).toBeVisible();
 });
+
+test("when the sign-in email cannot be sent, the person is pointed to Google instead", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/sign-in/magic-link", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "EMAIL_NOT_SENT",
+        message: "We could not send the sign-in email.",
+      }),
+    }),
+  );
+  await page.goto("/sign-in");
+  await page.getByLabel("Email address").fill("someone@example.com");
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(page.getByText(/Please continue with Google instead/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check your inbox" })).toHaveCount(0);
+});

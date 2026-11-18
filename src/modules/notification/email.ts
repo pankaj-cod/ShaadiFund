@@ -38,7 +38,10 @@ async function sendWithResend(message: EmailMessage, from: string, apiKey: strin
     body: JSON.stringify({ from, ...message }),
   });
   if (!response.ok) {
-    throw new Error(`Resend rejected the email (${response.status}): ${await response.text()}`);
+    const body = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(
+      `Resend rejected the email (${response.status}): ${body?.message ?? "no reason given"}`,
+    );
   }
 }
 

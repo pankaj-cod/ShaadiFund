@@ -1,10 +1,13 @@
 import "server-only";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
+import { RateLimitedError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { assertWithinRateLimit } from "@/lib/rate-limit";
 import { track } from "@/modules/analytics/analytics.service";
 import { sendEmail } from "@/modules/notification/email";
@@ -55,8 +58,28 @@ function createAuth() {
         storeToken: "hashed",
         sendMagicLink: async ({ email, url }) => {
           // Stops anyone using the form to flood a person's inbox (and our email quota).
-          await assertWithinRateLimit(`magic-link:${email.toLowerCase()}`, 5, 15 * 60 * 1000);
-          await sendEmail({ to: email, ...magicLinkEmail(url) });
+          try {
+            await assertWithinRateLimit(`magic-link:${email.toLowerCase()}`, 5, 15 * 60 * 1000);
+          } catch (error) {
+            if (error instanceof RateLimitedError) {
+              throw new APIError("TOO_MANY_REQUESTS", {
+                code: "RATE_LIMITED",
+                message: error.message,
+              });
+            }
+            throw error;
+          }
+          try {
+            await sendEmail({ to: email, ...magicLinkEmail(url) });
+          } catch (error) {
+            // The reason (e.g. an unverified sending domain) goes to the server log;
+            // the visitor gets a clear message and is offered another way in.
+            logger.error("Sign-in email could not be sent", { error });
+            throw new APIError("SERVICE_UNAVAILABLE", {
+              code: "EMAIL_NOT_SENT",
+              message: "We could not send the sign-in email.",
+            });
+          }
         },
       }),
       // Must stay last: lets server actions set the session cookie.

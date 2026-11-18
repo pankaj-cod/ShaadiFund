@@ -154,4 +154,10 @@ _Last updated: 2026-11-16_
 
 ## Deployment status
 
-Not deployed. Local only. No hosting, database or email accounts created.
+**Live at https://shaadi-fund.vercel.app** since 2026-11-17, on Vercel (Mumbai region) with Neon Postgres, Vercel Blob, Upstash Redis and Resend.
+
+Checked from outside on 2026-11-17: health check reaches the database; home page, demo wedding, sign-in, legal pages and admin (shown as "not found" when signed out) load; security headers present; the Razorpay webhook and the housekeeping job refuse unauthorised requests.
+
+Not yet checked on the live site: sign-in emails, photo uploads to Blob, rate limits through Upstash, Google sign-in, any payment.
+
+At the time of the check the live site ran with `PAYMENTS_MODE` unset, so it used the **mock** payment provider (demo payments, no Razorpay), and Google sign-in was not configured there.

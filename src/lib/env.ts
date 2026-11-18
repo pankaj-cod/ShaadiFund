@@ -65,6 +65,9 @@ const envSchema = z
         env.UPSTASH_REDIS_REST_URL,
       ), "connect Upstash Redis for shared rate limits on Vercel");
       require("CRON_SECRET", Boolean(env.CRON_SECRET), "is required on Vercel for scheduled jobs");
+      require("EMAIL_FROM", !/@[^>]*\.test>?$/.test(
+        env.EMAIL_FROM.trim(),
+      ), "set a real sender on Vercel, e.g. ShaadiFund <onboarding@resend.dev> or an address on your verified domain");
     }
     if (env.EMAIL_TRANSPORT === "resend" && !env.RESEND_API_KEY) {
       ctx.addIssue({

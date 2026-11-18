@@ -100,6 +100,7 @@ describe("parseEnv", () => {
       KV_REST_API_URL: "https://example.upstash.io",
       KV_REST_API_TOKEN: "t",
       CRON_SECRET: "c",
+      EMAIL_FROM: "ShaadiFund <onboarding@resend.dev>",
     };
 
     it("accepts a complete configuration, reading Vercel's own variable names", () => {
@@ -115,6 +116,14 @@ describe("parseEnv", () => {
         parseEnv({ ...vercel, KV_REST_API_URL: undefined, KV_REST_API_TOKEN: undefined }),
       ).toThrow(/UPSTASH_REDIS_REST_URL/);
       expect(() => parseEnv({ ...vercel, CRON_SECRET: undefined })).toThrow(/CRON_SECRET/);
+    });
+
+    it("refuses the placeholder sender address, which Resend would reject", () => {
+      const { EMAIL_FROM: _unused, ...withoutSender } = vercel;
+      expect(() => parseEnv(withoutSender)).toThrow(/EMAIL_FROM/);
+      expect(() => parseEnv({ ...vercel, EMAIL_FROM: "hello@shaadifund.test" })).toThrow(
+        /EMAIL_FROM/,
+      );
     });
 
     it("refuses blob storage without a connected store", () => {
@@ -137,6 +146,7 @@ describe("parseEnv", () => {
         VERCEL: "1",
         RESEND_API_KEY: "re_x",
         CRON_SECRET: "c",
+        EMAIL_FROM: "ShaadiFund <onboarding@resend.dev>",
         STORAGE_KV_REST_API_URL: "https://prefixed.upstash.io",
         STORAGE_KV_REST_API_TOKEN: "write-token",
         STORAGE_KV_REST_API_READ_ONLY_TOKEN: "read-only-token",

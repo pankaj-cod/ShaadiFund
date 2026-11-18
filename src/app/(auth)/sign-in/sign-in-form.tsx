@@ -66,8 +66,12 @@ export function SignInForm({
     if (error) {
       setFormError(
         error.status === 429
-          ? "Too many attempts. Please wait a minute and try again."
-          : "We could not send your sign-in link. Please try again.",
+          ? "Too many sign-in emails for this address. Please wait 15 minutes and try again."
+          : error.status === 503
+            ? googleEnabled
+              ? "We could not email you a sign-in link just now. Please continue with Google instead, or try again later."
+              : "We could not email you a sign-in link just now. Please try again in a few minutes."
+            : "We could not send your sign-in link. Please try again.",
       );
       return;
     }
